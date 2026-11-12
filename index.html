@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/logo.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#E0E0E0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Spendly — Personal Expense Tracker " />
+  <title>Spendly — Personal Expense Tracker</title>
+
+  <!-- Google Fonts for Geometric & Digital Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+    rel="stylesheet" />
+
+  <!-- Prevent Theme Flash & Define Root Colors -->
+  <style>
+    :root {
+      --bg-main: #E0E0E0;
+      --bg-surface: #F8F8F8;
+      --text-primary: #484848;
+      --text-secondary: #787068;
+      --border-subtle: rgba(72, 72, 72, 0.08);
+    }
+
+    html.dark {
+      --bg-main: #161719;
+      --bg-surface: #282A2F;
+      --text-primary: #F8F8F8;
+      --text-secondary: #9A9EAA;
+      --border-subtle: rgba(248, 248, 248, 0.08);
+    }
+  </style>
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('spendly_theme_mode');
+        if (stored === 'dark' || (!stored && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = 'dark';
+        } else {
+          document.documentElement.classList.add('light');
+          document.documentElement.style.colorScheme = 'light';
+        }
+      } catch (e) { }
+    })();
+  </script>
+</head>
+
+<body class="antialiased">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

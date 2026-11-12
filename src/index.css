@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Exact Blockit-inspired light palette */
+    --bg-main: #E0E0E0;
+    --bg-secondary: #D8D8D8;
+    --bg-surface: #F8F8F8;
+    --bg-input: #ECECEC;
+    --bg-hover: #ECECEC;
+
+    --color-accent: #F05010;
+    --color-accent-soft: #E89878;
+    --color-dark: #484848;
+
+    --text-primary: #484848;
+    --text-secondary: #787068;
+    --text-disabled: #A8A8A8;
+
+    --border-subtle: rgba(72, 72, 72, 0.08);
+    --border-active: #F05010;
+
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color-scheme: light;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html.dark {
+    /* Blockit-inspired dark palette */
+    --bg-main: #161719;
+    --bg-secondary: #222428;
+    --bg-surface: #282A2F;
+    --bg-input: #32353B;
+    --bg-hover: #353840;
+
+    --color-accent: #F05010;
+    --color-accent-soft: #E89878;
+    --color-dark: #F8F8F8;
+
+    --text-primary: #F8F8F8;
+    --text-secondary: #9A9EAA;
+    --text-disabled: #5A5E68;
+
+    --border-subtle: rgba(248, 248, 248, 0.08);
+    --border-active: #F05010;
+
+    color-scheme: dark;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
+
+/* Geometric Display Font for large Blockit numbers and headings */
+.font-display {
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, sans-serif;
+}
+
+/* Tabular numbers for financial precision */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tactile Blockit surface styles */
+.blockit-surface {
+  background-color: var(--bg-surface);
+  border-radius: 1.5rem; /* 24px */
+}
+
+.blockit-pill {
+  border-radius: 9999px;
+}
+
+/* Subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-disabled);
+  border-radius: 9999px;
+  opacity: 0.5;
+}
+
+/* Native date input custom styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+}

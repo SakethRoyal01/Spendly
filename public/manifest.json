@@ -1,0 +1,19 @@
+{
+  "name": "Spendly — Personal Finance Management",
+  "short_name": "Spendly",
+  "description": "Tactile personal finance OS with cash & bank balances, savings goals, monthly budgets, and financial insights.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#E0E0E0",
+  "theme_color": "#E0E0E0",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

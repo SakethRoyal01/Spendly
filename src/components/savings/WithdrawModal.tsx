@@ -1,0 +1,162 @@
+import React, { useState } from 'react';
+import { Modal } from '../ui/Modal';
+import { Button } from '../ui/Button';
+import type { SavingsPot, Account } from '../../types/finance';
+import { formatINR, parseAmount } from '../../utils/currency';
+import { getTodayDateString } from '../../utils/dates';
+import { ArrowDownLeft } from 'lucide-react';
+
+interface WithdrawModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  pot: SavingsPot | null;
+  accounts: Account[];
+  onWithdraw: (data: {
+    potId: string;
+    destinationAccountId: string;
+    amount: number;
+    date: string;
+    note?: string;
+  }) => Promise<void>;
+}
+
+export const WithdrawModal: React.FC<WithdrawModalProps> = ({
+  isOpen,
+  onClose,
+  pot,
+  accounts,
+  onWithdraw,
+}) => {
+  const [destId, setDestId] = useState(accounts[0]?.id || '');
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(getTodayDateString());
+  const [note, setNote] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!pot) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = parseAmount(amount);
+    if (!parsed) {
+      setError('Please enter a valid withdrawal amount greater than 0');
+      return;
+    }
+
+    if (pot.currentAmount < parsed) {
+      setError(`Cannot withdraw more than available savings balance (${formatINR(pot.currentAmount)})`);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await onWithdraw({
+        potId: pot.id,
+        destinationAccountId: destId,
+        amount: parsed,
+        date,
+        note: note.trim() || undefined,
+      });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Withdrawal failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Withdraw from ${pot.name}`}
+      subtitle="Moves funds back to an active wallet without counting as income"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="p-3 rounded-xl bg-red-500/10 text-red-500 text-xs font-semibold">
+            {error}
+          </div>
+        )}
+
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
+            Transfer To Wallet *
+          </label>
+          <select
+            value={destId}
+            onChange={(e) => setDestId(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-primary)] focus:outline-none"
+          >
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name} ({formatINR(a.currentBalance)})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
+            Withdrawal Amount (₹) * (Max: {formatINR(pot.currentAmount)})
+          </label>
+          <input
+            type="number"
+            step="any"
+            min="0.01"
+            max={pot.currentAmount}
+            required
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)] text-xl font-bold text-[var(--text-primary)] focus:outline-none tabular-nums"
+            autoFocus
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
+            Date
+          </label>
+          <input
+            type="date"
+            required
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-primary)] focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
+            Note (Optional)
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. Moved back to Bank for expense"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] focus:outline-none"
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--border-subtle)]">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={isSubmitting}
+            icon={<ArrowDownLeft className="w-4 h-4" />}
+          >
+            Confirm Withdrawal
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
