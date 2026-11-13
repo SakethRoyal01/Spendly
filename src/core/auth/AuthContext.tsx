@@ -134,6 +134,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     loading,
     signUp,
+    verifySignupOtp,
+    resendSignupOtp,
     signIn,
     signOut,
     resetPassword,
