@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../core/auth/AuthContext';
 import { useFinance } from '../../core/finance/useFinance';
 import { useTheme } from '../../shared/theme/useTheme';
@@ -119,6 +120,14 @@ export const Settings: React.FC = () => {
           Settings
         </h1>
       </div>
+
+      <Link to="/settings/profile" className="group bg-[var(--bg-surface)] rounded-3xl p-5 sm:p-6 border border-[var(--border-subtle)] shadow-xs flex items-center justify-between gap-4 hover:border-[#F05010]/50 transition-colors">
+        <div>
+          <span className="text-xs font-extrabold text-[var(--text-primary)] block">Personal profile</span>
+          <span className="text-[11px] text-[var(--text-secondary)] block mt-1">View and update your name, email, and phone number</span>
+        </div>
+        <span className="text-[#F05010] text-xs font-extrabold group-hover:translate-x-1 transition-transform">Manage →</span>
+      </Link>
 
       {/* 1. Appearance / Theme Section */}
       <div className="bg-[var(--bg-surface)] rounded-3xl p-6 sm:p-8 border border-[var(--border-subtle)] shadow-xs space-y-4">
