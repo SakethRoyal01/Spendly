@@ -265,5 +265,6 @@ export interface FullBackupData {
   budgets: Budget[];
   recurring: RecurringTransaction[];
   occurrences: RecurringOccurrence[];
+  notifications?: FinancialNotification[];
   preferences: UserPreferences;
 }
