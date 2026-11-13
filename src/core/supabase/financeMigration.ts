@@ -118,12 +118,29 @@ export async function importLocalFinanceData(): Promise<FinanceImportResult> {
     }
   }
 
-  const { count: preferenceCount, error: preferenceError } = await supabase
+  const { data: savedPreferences, error: preferenceError } = await supabase
     .from('user_preferences')
-    .select('user_id', { count: 'exact', head: true });
+    .select('theme,currency,allow_overdraft,default_account_id,notifications_enabled,savings_reminder_enabled,savings_reminder_frequency,last_savings_reminder_date,reduced_motion')
+    .maybeSingle();
   if (preferenceError) throw preferenceError;
-  if ((preferenceCount ?? 0) < 1) {
-    throw new Error('Import verification could not confirm your preferences. Your local data is still intact; retry the import.');
+  if (!savedPreferences) {
+    throw new Error('Import verification could not find your preferences. Your local data is still intact; retry the import.');
+  }
+
+  const expectedPreferences = backup.preferences;
+  const preferenceMatches =
+    savedPreferences.theme === expectedPreferences.theme &&
+    savedPreferences.currency === expectedPreferences.currency &&
+    savedPreferences.allow_overdraft === expectedPreferences.allowOverdraft &&
+    savedPreferences.default_account_id === (expectedPreferences.defaultAccountId ?? null) &&
+    savedPreferences.notifications_enabled === expectedPreferences.notificationsEnabled &&
+    savedPreferences.savings_reminder_enabled === expectedPreferences.savingsReminderEnabled &&
+    savedPreferences.savings_reminder_frequency === expectedPreferences.savingsReminderFrequency &&
+    savedPreferences.last_savings_reminder_date === (expectedPreferences.lastSavingsReminderDate ?? null) &&
+    savedPreferences.reduced_motion === expectedPreferences.reducedMotion;
+
+  if (!preferenceMatches) {
+    throw new Error('Import verification found a preferences mismatch. Your local data is still intact; retry the import.');
   }
 
   return { accounts: backup.accounts.length, transactions: backup.transactions.length, splits: payload.transactionSplits.length };
