@@ -3,6 +3,7 @@ import { BrowserRouter, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '../shared/theme/ThemeContext';
 import { AuthProvider, useAuth } from '../core/auth/AuthContext';
 import { FinanceProvider } from '../core/finance/FinanceContext';
+import { NavigationProvider } from '../shared/navigation/NavigationContext';
 import { AuthPage } from '../features/auth/AuthPage';
 
 const LOCAL_DATA_OWNER_KEY = 'spendly:local-finance-owner';
@@ -63,7 +64,11 @@ const SessionGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   }
 
-  return <FinanceProvider>{children}</FinanceProvider>;
+  return (
+    <FinanceProvider>
+      <NavigationProvider>{children}</NavigationProvider>
+    </FinanceProvider>
+  );
 };
 
 export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => (
