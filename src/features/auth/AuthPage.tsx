@@ -6,7 +6,7 @@ import { useAuth } from '../../core/auth/AuthContext';
 type Mode = 'signin' | 'signup' | 'forgot' | 'reset';
 
 export const AuthPage: React.FC = () => {
-  const { signIn, signUp, resetPassword, updatePassword, user } = useAuth();
+  const { signIn, signUp, resetPassword, updatePassword } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>(searchParams.get('mode') === 'reset' ? 'reset' : 'signin');
@@ -16,10 +16,6 @@ export const AuthPage: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-
-  React.useEffect(() => {
-    if (user && mode !== 'reset') navigate('/', { replace: true });
-  }, [user, mode, navigate]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
