@@ -19,7 +19,7 @@ async function saveSnapshot(userId: string, backup: FullBackupData): Promise<voi
   const { error } = await supabase
     .from('user_finance_snapshots')
     .upsert(
-      { user_id: userId, data: backup, updated_at: new Date().toISOString() },
+      { user_id: userId, backup, updated_at: new Date().toISOString() },
       { onConflict: 'user_id' }
     );
   if (error) throw new Error(`Your change could not be saved to your account: ${error.message}`);
@@ -28,7 +28,7 @@ async function saveSnapshot(userId: string, backup: FullBackupData): Promise<voi
 async function loadUserSnapshot(userId: string): Promise<void> {
   const { data, error } = await supabase
     .from('user_finance_snapshots')
-    .select('data')
+    .select('backup')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -38,8 +38,8 @@ async function loadUserSnapshot(userId: string): Promise<void> {
   // user's cloud data; a first-time user starts with an empty finance workspace.
   await localFinanceRepository.clearAllData();
 
-  if (data?.data) {
-    await localFinanceRepository.importFullBackup(data.data as FullBackupData);
+  if (data?.backup) {
+    await localFinanceRepository.importFullBackup(data.backup as FullBackupData);
   } else {
     // LocalFinanceRepository creates the app's default zero-balance wallets.
     await localFinanceRepository.initialize();
