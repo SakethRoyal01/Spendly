@@ -45,7 +45,12 @@ export const Profile: React.FC = () => {
     event.preventDefault();
     if (!user) return;
     if (fullName.trim().length < 2) { setError('Enter your full name.'); return; }
-    if (!/^\+?[0-9\s()-]{7,20}$/.test(phone.trim())) { setError('Enter a valid phone number.'); return; }
+    const phoneValue = phone.trim();
+    const phoneDigits = phoneValue.replace(/\D/g, '');
+    if (!/^\+?[\d\s().-]+$/.test(phoneValue) || phoneDigits.length < 7 || phoneDigits.length > 15) {
+      setError('Enter a valid phone number (7–15 digits).');
+      return;
+    }
     setSaving(true);
     setError('');
     setSaved(false);
