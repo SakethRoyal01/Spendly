@@ -66,6 +66,11 @@ function toDatabaseBackup(backup: FullBackupData) {
       id:o.id,recurring_id:o.recurringId,due_date:o.dueDate,status:o.status,
       transaction_id:o.transactionId ?? null,processed_at:o.processedAt ?? null,
     })),
+    notifications: (backup.notifications ?? []).map(n => ({
+      id:n.id,type:n.type,title:n.title,message:n.message,notification_date:n.date,
+      is_read:n.isRead,is_dismissed:n.isDismissed,action_url:n.actionUrl ?? null,
+      metadata:n.metadata ?? null,created_at:n.createdAt,
+    })),
     preferences: backup.preferences,
   };
 }
@@ -76,7 +81,7 @@ function toDatabaseBackup(backup: FullBackupData) {
  */
 export async function importLocalFinanceData(): Promise<FinanceImportResult> {
   const backup = await localFinanceRepository.exportFullBackup();
-  if (!backup.accounts.length && !backup.transactions.length) {
+  if (!backup.accounts.length && !backup.transactions.length && !backup.savingsPots.length) {
     throw new Error('No local Spendly data was found to import.');
   }
 
