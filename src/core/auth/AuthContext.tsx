@@ -7,6 +7,8 @@ interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   signUp: (fullName: string, phone: string, email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
+  verifySignupOtp: (email: string, token: string) => Promise<void>;
+  resendSignupOtp: (email: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -86,6 +88,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { needsEmailConfirmation: !data.session };
   }, []);
 
+  const verifySignupOtp = useCallback(async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: token.replace(/\\s/g, ''),
+      type: 'signup',
+    });
+    if (error) throw error;
+  }, []);
+
+  const resendSignupOtp = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim().toLowerCase(),
+    });
+    if (error) throw error;
+  }, []);
+
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
@@ -119,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signOut,
     resetPassword,
     updatePassword,
-  }), [session, loading, signUp, signIn, signOut, resetPassword, updatePassword]);
+  }), [session, loading, signUp, verifySignupOtp, resendSignupOtp, signIn, signOut, resetPassword, updatePassword]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
