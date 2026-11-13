@@ -55,12 +55,12 @@ export const AuthPage: React.FC = () => {
         const result = await signUp(fullName, phone, email, password);
         if (result.needsEmailConfirmation) {
           setMode('verify');
-          setMessage('We sent a 6-digit verification code to your email. Enter it below to activate your account.');
+          setMessage('We sent an 8-digit verification code to your email. Enter it below to activate your account.');
         } else {
           navigate('/', { replace: true });
         }
       } else if (mode === 'verify') {
-        if (!/^\d{6}$/.test(otp.trim())) throw new Error('Enter the 6-digit code from your email.');
+        if (!/^\d{8}$/.test(otp.trim())) throw new Error('Enter the 8-digit code from your email.');
         await verifySignupOtp(email, otp.trim());
         navigate('/', { replace: true });
       } else if (mode === 'signin') {
@@ -179,11 +179,11 @@ export const AuthPage: React.FC = () => {
                   </label>
                 </>}
                 {isVerify && <label className="block">
-                  <span className={labelClass}>6-digit email code</span>
-                  <input required inputMode="numeric" autoComplete="one-time-code" type="text" pattern="[0-9]{6}" maxLength={6}
-                    value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  <span className={labelClass}>8-digit email code</span>
+                  <input required inputMode="numeric" autoComplete="one-time-code" type="text" pattern="[0-9]{8}" maxLength={8}
+                    value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
                     className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-input)] px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] text-[var(--text-primary)] outline-none transition-all focus:border-[#F05010] focus:ring-4 focus:ring-[#F05010]/10"
-                    placeholder="000000" />
+                    placeholder="00000000" />
                 </label>}
                 {!isVerify && mode !== 'reset' && <label className="block">
                   <span className={labelClass}>Email address</span>
