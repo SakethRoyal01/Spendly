@@ -6,7 +6,7 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
+  signUp: (fullName: string, phone: string, email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -76,10 +76,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
+  const signUp = useCallback(async (fullName: string, phone: string, email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
+      options: { data: { full_name: fullName.trim(), phone: phone.trim() } },
     });
     if (error) throw error;
     return { needsEmailConfirmation: !data.session };
