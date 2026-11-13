@@ -28,7 +28,7 @@ export const AuthPage: React.FC = () => {
       if (mode === 'signup') {
         if (password.length < 8) throw new Error('Use a password with at least 8 characters.');
         if (fullName.trim().length < 2) throw new Error('Enter your full name.');
-        if (!/^\\+?[0-9\\s()-]{7,20}$/.test(phone.trim())) throw new Error('Enter a valid phone number.');
+        if (!/^\+?[0-9\s()-]{7,20}$/.test(phone.trim())) throw new Error('Enter a valid phone number.');
         const result = await signUp(fullName, phone, email, password);
         if (result.needsEmailConfirmation) {
           setMessage('Account created. Check your inbox and confirm your email before signing in.');
