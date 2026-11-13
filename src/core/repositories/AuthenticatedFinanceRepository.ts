@@ -90,7 +90,7 @@ export const financeRepository: RepositoryWithInitialize = new Proxy(
         // Capture this user's state before queuing the network write. This
         // prevents a fast account switch from exporting the next user's cache.
         const backup = await localFinanceRepository.exportFullBackup();
-        persistenceQueue = persistenceQueue.then(() => saveSnapshot(userId, backup));
+        persistenceQueue = persistenceQueue.catch(() => undefined).then(() => saveSnapshot(userId, backup));
         await persistenceQueue;
         return result;
       };
