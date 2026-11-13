@@ -44,7 +44,11 @@ export const AuthPage: React.FC = () => {
     try {
       if (mode === 'signup') {
         if (fullName.trim().length < 2) throw new Error('Please enter your full name.');
-        if (!/^\\+?[0-9\\s()-]{7,20}$/.test(phone.trim())) throw new Error('Please enter a valid phone number.');
+        const phoneValue = phone.trim();
+        const phoneDigits = phoneValue.replace(/\D/g, '');
+        if (!/^\+?[\d\s().-]+$/.test(phoneValue) || phoneDigits.length < 7 || phoneDigits.length > 15) {
+          throw new Error('Please enter a valid phone number (7–15 digits).');
+        }
         if (password.length < 8) throw new Error('Your password must contain at least 8 characters.');
         const result = await signUp(fullName, phone, email, password);
         if (result.needsEmailConfirmation) {
