@@ -6,13 +6,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../core/auth/AuthContext';
 
-type Mode = 'signin' | 'signup' | 'forgot' | 'reset';
+type Mode = 'signin' | 'signup' | 'verify' | 'forgot' | 'reset';
 
 const inputClass = 'w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-input)] py-3.5 pl-11 pr-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none transition-all focus:border-[#F05010] focus:ring-4 focus:ring-[#F05010]/10';
 const labelClass = 'mb-2 block text-xs font-semibold tracking-wide text-[var(--text-secondary)]';
 
 export const AuthPage: React.FC = () => {
-  const { signIn, signUp, resetPassword, updatePassword } = useAuth();
+  const { signIn, signUp, verifySignupOtp, resendSignupOtp, resetPassword, updatePassword } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>(searchParams.get('mode') === 'reset' ? 'reset' : 'signin');
@@ -21,6 +21,7 @@ export const AuthPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -32,6 +33,7 @@ export const AuthPage: React.FC = () => {
     setMessage('');
     setPassword('');
     setConfirmPassword('');
+    setOtp('');
     setShowPassword(false);
   };
 
@@ -52,10 +54,15 @@ export const AuthPage: React.FC = () => {
         if (password.length < 8) throw new Error('Your password must contain at least 8 characters.');
         const result = await signUp(fullName, phone, email, password);
         if (result.needsEmailConfirmation) {
-          setMessage('Your account is created. Check your inbox for the confirmation link before signing in.');
+          setMode('verify');
+          setMessage('We sent a 6-digit verification code to your email. Enter it below to activate your account.');
         } else {
           navigate('/', { replace: true });
         }
+      } else if (mode === 'verify') {
+        if (!/^\d{6}$/.test(otp.trim())) throw new Error('Enter the 6-digit code from your email.');
+        await verifySignupOtp(email, otp.trim());
+        navigate('/', { replace: true });
       } else if (mode === 'signin') {
         await signIn(email, password);
         navigate('/', { replace: true });
@@ -90,13 +97,14 @@ export const AuthPage: React.FC = () => {
   };
 
   const isSignup = mode === 'signup';
-  const title = isSignup ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : mode === 'reset' ? 'Set a new password' : 'Welcome back';
+  const isVerify = mode === 'verify';
+  const title = isSignup ? 'Create your account' : isVerify ? 'Verify your email' : mode === 'forgot' ? 'Reset your password' : mode === 'reset' ? 'Set a new password' : 'Welcome back';
   const description = isSignup
     ? 'A clearer picture of your money starts here.'
-    : mode === 'forgot' ? 'We’ll send a secure link to get you back in.'
+    : isVerify ? `Enter the one-time code sent to ${email}.` : mode === 'forgot' ? 'We’ll send a secure link to get you back in.'
     : mode === 'reset' ? 'Choose a new password for your Spendly account.'
     : 'Your finances are right where you left them.';
-  const primaryLabel = isSignup ? 'Create account' : mode === 'forgot' ? 'Send reset link' : mode === 'reset' ? 'Update password' : 'Sign in';
+  const primaryLabel = isSignup ? 'Create account' : isVerify ? 'Verify email' : mode === 'forgot' ? 'Send reset link' : mode === 'reset' ? 'Update password' : 'Sign in';
 
   const passwordField = (label: string, value: string, setter: (value: string) => void, autoComplete: string) => (
     <label className="block">
@@ -170,13 +178,20 @@ export const AuthPage: React.FC = () => {
                     </span>
                   </label>
                 </>}
-                {mode !== 'reset' && <label className="block">
+                {isVerify && <label className="block">
+                  <span className={labelClass}>6-digit email code</span>
+                  <input required inputMode="numeric" autoComplete="one-time-code" type="text" pattern="[0-9]{6}" maxLength={6}
+                    value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-input)] px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] text-[var(--text-primary)] outline-none transition-all focus:border-[#F05010] focus:ring-4 focus:ring-[#F05010]/10"
+                    placeholder="000000" />
+                </label>}
+                {!isVerify && mode !== 'reset' && <label className="block">
                   <span className={labelClass}>Email address</span>
                   <span className="relative block"><Mail size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-disabled)]" />
                     <input required type="email" autoComplete="email" maxLength={254} value={email} onChange={e => setEmail(e.target.value)} className={inputClass} placeholder="you@example.com" />
                   </span>
                 </label>}
-                {mode !== 'forgot' && passwordField('Password', password, setPassword, isSignup || mode === 'reset' ? 'new-password' : 'current-password')}
+                {!isVerify && mode !== 'forgot' && passwordField('Password', password, setPassword, isSignup || mode === 'reset' ? 'new-password' : 'current-password')}
                 {mode === 'reset' && passwordField('Confirm password', confirmPassword, setConfirmPassword, 'new-password')}
 
                 {error && <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/[0.07] px-3.5 py-3 text-xs leading-5 text-red-500">{error}</div>}
@@ -192,6 +207,14 @@ export const AuthPage: React.FC = () => {
                 {mode === 'signin' ? <>
                   <button type="button" onClick={() => changeMode('forgot')} className="transition-colors hover:text-[#F05010]">Forgot password?</button>
                   <button type="button" onClick={() => changeMode('signup')} className="font-bold text-[#F05010] transition-colors hover:text-[#d94308]">Create an account</button>
+                </> : isVerify ? <>
+                  <button type="button" disabled={busy} onClick={async () => {
+                    setBusy(true); setError(''); setMessage('');
+                    try { await resendSignupOtp(email); setMessage('A new verification code has been sent.'); }
+                    catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to resend the code. Please try again later.'); }
+                    finally { setBusy(false); }
+                  }} className="font-semibold text-[#F05010] transition-colors hover:text-[#d94308] disabled:opacity-50">Resend code</button>
+                  <button type="button" onClick={() => changeMode('signin')} className="transition-colors hover:text-[#F05010]">Back to sign in</button>
                 </> : <button type="button" onClick={() => changeMode('signin')} className="transition-colors hover:text-[#F05010]">← Back to sign in</button>}
               </div>
               <div className="mt-8 flex items-center justify-center gap-2 border-t border-[var(--border-subtle)] pt-5 text-[10px] text-[var(--text-disabled)]">
