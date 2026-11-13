@@ -22,7 +22,7 @@ import type {
 import { isChangeTransaction } from '../../types/finance';
 import type { Expense, ExpenseCategory, MonthlyStats } from '../../types/expense';
 import type { ContributeInput, WithdrawInput, TransferInput } from '../repositories/FinanceRepository';
-import { localFinanceRepository } from '../repositories/LocalFinanceRepository';
+import { financeRepository } from '../repositories/AuthenticatedFinanceRepository';
 import { getTodayDateString, getCurrentMonthString } from '../../shared/utils/dates';
 import { addRupees, subtractRupees, formatINR } from '../../shared/utils/currency';
 import { calculateDailyTotal, calculateMonthlyStats } from '../../shared/utils/calculations';
@@ -78,7 +78,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Primary data loader
   const refreshData = useCallback(async () => {
     try {
-      await localFinanceRepository.initialize();
+      await financeRepository.initialize();
       const [
         accs,
         txs,
@@ -90,15 +90,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         prefs,
         ledger,
       ] = await Promise.all([
-        localFinanceRepository.getAccounts(),
-        localFinanceRepository.getTransactions(),
-        localFinanceRepository.getTransfers(),
-        localFinanceRepository.getSavingsPots(),
-        localFinanceRepository.getBudgets(),
-        localFinanceRepository.getRecurring(),
-        localFinanceRepository.getNotifications(),
-        localFinanceRepository.getPreferences(),
-        localFinanceRepository.getLedgerEntries(),
+        financeRepository.getAccounts(),
+        financeRepository.getTransactions(),
+        financeRepository.getTransfers(),
+        financeRepository.getSavingsPots(),
+        financeRepository.getBudgets(),
+        financeRepository.getRecurring(),
+        financeRepository.getNotifications(),
+        financeRepository.getPreferences(),
+        financeRepository.getLedgerEntries(),
       ]);
 
       setAccounts(accs);
@@ -312,9 +312,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addExpense = useCallback(
     async (input: CreateTransactionInput): Promise<Transaction> => {
       try {
-        const accountsBefore = await localFinanceRepository.getAccounts();
-        const created = await localFinanceRepository.createExpense(input, undefined, input.createdAt);
-        const accountsAfter = await localFinanceRepository.getAccounts();
+        const accountsBefore = await financeRepository.getAccounts();
+        const created = await financeRepository.createExpense(input, undefined, input.createdAt);
+        const accountsAfter = await financeRepository.getAccounts();
 
         await refreshData();
         showToast(`Expense of ₹${created.amount} added`);
@@ -334,7 +334,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     async (input: CreateTransactionInput): Promise<Transaction> => {
       try {
         const isChange = Boolean(input.isChange || input.category === 'Change');
-        const created = await localFinanceRepository.createIncome(input, undefined, input.createdAt);
+        const created = await financeRepository.createIncome(input, undefined, input.createdAt);
         await refreshData();
         if (isChange) {
           showToast(`Change of ₹${created.amount} recorded to wallet (not counted as income)`);
@@ -354,9 +354,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const updateTransaction = useCallback(
     async (id: string, updates: UpdateTransactionInput): Promise<Transaction> => {
       try {
-        const accountsBefore = await localFinanceRepository.getAccounts();
-        const updated = await localFinanceRepository.updateTransaction(id, updates);
-        const accountsAfter = await localFinanceRepository.getAccounts();
+        const accountsBefore = await financeRepository.getAccounts();
+        const updated = await financeRepository.updateTransaction(id, updates);
+        const accountsAfter = await financeRepository.getAccounts();
 
         await refreshData();
         showToast('Transaction updated successfully');
@@ -375,7 +375,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const deleteTransaction = useCallback(
     async (id: string): Promise<boolean> => {
       try {
-        const res = await localFinanceRepository.deleteTransaction(id);
+        const res = await financeRepository.deleteTransaction(id);
         await refreshData();
         showToast('Transaction deleted and balances adjusted');
         return res;
@@ -397,7 +397,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const createAccount = useCallback(
     async (input: CreateAccountInput): Promise<Account> => {
-      const created = await localFinanceRepository.createAccount(input);
+      const created = await financeRepository.createAccount(input);
       await refreshData();
       showToast(`Wallet "${created.name}" created`);
       return created;
@@ -407,7 +407,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateAccount = useCallback(
     async (id: string, updates: UpdateAccountInput): Promise<Account> => {
-      const updated = await localFinanceRepository.updateAccount(id, updates);
+      const updated = await financeRepository.updateAccount(id, updates);
       await refreshData();
       showToast('Wallet updated successfully');
       return updated;
@@ -418,7 +418,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const archiveAccount = useCallback(
     async (id: string): Promise<boolean> => {
       try {
-        const res = await localFinanceRepository.archiveAccount(id);
+        const res = await financeRepository.archiveAccount(id);
         await refreshData();
         showToast('Wallet archived');
         return res;
@@ -434,7 +434,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const transferBetweenAccounts = useCallback(
     async (input: TransferInput): Promise<Transfer> => {
       try {
-        const res = await localFinanceRepository.createTransfer(input);
+        const res = await financeRepository.createTransfer(input);
         await refreshData();
         showToast(`Transferred ₹${res.amount} between accounts`);
         return res;
@@ -449,7 +449,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const createSavingsPot = useCallback(
     async (input: CreateSavingsPotInput): Promise<SavingsPot> => {
-      const created = await localFinanceRepository.createSavingsPot(input);
+      const created = await financeRepository.createSavingsPot(input);
       await refreshData();
       showToast(`Savings goal "${created.name}" created`);
       return created;
@@ -459,7 +459,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateSavingsPot = useCallback(
     async (id: string, updates: UpdateSavingsPotInput): Promise<SavingsPot> => {
-      const updated = await localFinanceRepository.updateSavingsPot(id, updates);
+      const updated = await financeRepository.updateSavingsPot(id, updates);
       await refreshData();
       showToast('Savings pot updated');
       return updated;
@@ -470,7 +470,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const archiveSavingsPot = useCallback(
     async (id: string): Promise<boolean> => {
       try {
-        const res = await localFinanceRepository.archiveSavingsPot(id);
+        const res = await financeRepository.archiveSavingsPot(id);
         await refreshData();
         showToast('Savings pot archived');
         return res;
@@ -486,7 +486,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const contributeToSavings = useCallback(
     async (input: ContributeInput): Promise<SavingsContribution> => {
       try {
-        const res = await localFinanceRepository.contributeToSavings(input);
+        const res = await financeRepository.contributeToSavings(input);
         await refreshData();
         showToast(`Added ₹${res.amount} to savings`);
         return res;
@@ -502,7 +502,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const withdrawFromSavings = useCallback(
     async (input: WithdrawInput): Promise<SavingsWithdrawal> => {
       try {
-        const res = await localFinanceRepository.withdrawFromSavings(input);
+        const res = await financeRepository.withdrawFromSavings(input);
         await refreshData();
         showToast(`Withdrew ₹${res.amount} from savings to wallet`);
         return res;
@@ -517,7 +517,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const saveBudget = useCallback(
     async (input: Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>): Promise<Budget> => {
-      const saved = await localFinanceRepository.saveBudget(input);
+      const saved = await financeRepository.saveBudget(input);
       await refreshData();
       showToast('Budget saved successfully');
       return saved;
@@ -527,7 +527,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const createRecurring = useCallback(
     async (input: Omit<RecurringTransaction, 'id' | 'createdAt' | 'updatedAt'>): Promise<RecurringTransaction> => {
-      const created = await localFinanceRepository.createRecurring(input);
+      const created = await financeRepository.createRecurring(input);
       await refreshData();
       showToast(`Recurring schedule "${created.description}" created`);
       return created;
@@ -537,7 +537,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateRecurring = useCallback(
     async (id: string, updates: Partial<RecurringTransaction>): Promise<RecurringTransaction> => {
-      const updated = await localFinanceRepository.updateRecurring(id, updates);
+      const updated = await financeRepository.updateRecurring(id, updates);
       await refreshData();
       showToast('Recurring payment updated');
       return updated;
@@ -548,7 +548,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const markOccurrencePaid = useCallback(
     async (recurringId: string, dueDate: string, paymentMethod?: string): Promise<Transaction> => {
       try {
-        const tx = await localFinanceRepository.markOccurrencePaid(recurringId, dueDate, paymentMethod);
+        const tx = await financeRepository.markOccurrencePaid(recurringId, dueDate, paymentMethod);
         await refreshData();
         showToast(`Recorded recurring payment of ₹${tx.amount}`);
         return tx;
@@ -563,7 +563,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const skipOccurrence = useCallback(
     async (recurringId: string, dueDate: string): Promise<boolean> => {
-      const res = await localFinanceRepository.skipOccurrence(recurringId, dueDate);
+      const res = await financeRepository.skipOccurrence(recurringId, dueDate);
       await refreshData();
       showToast('Occurrence skipped');
       return res;
@@ -573,7 +573,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const markNotificationRead = useCallback(
     async (id: string): Promise<void> => {
-      await localFinanceRepository.markNotificationRead(id);
+      await financeRepository.markNotificationRead(id);
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     },
     []
@@ -581,7 +581,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const dismissNotification = useCallback(
     async (id: string): Promise<void> => {
-      await localFinanceRepository.dismissNotification(id);
+      await financeRepository.dismissNotification(id);
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isDismissed: true } : n)));
     },
     []
@@ -589,7 +589,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updatePreferences = useCallback(
     async (updates: Partial<UserPreferences>): Promise<UserPreferences> => {
-      const updated = await localFinanceRepository.updatePreferences(updates);
+      const updated = await financeRepository.updatePreferences(updates);
       setPreferences(updated);
       showToast('Preferences updated');
       return updated;
@@ -598,13 +598,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   const exportFullBackup = useCallback(async (): Promise<FullBackupData> => {
-    return localFinanceRepository.exportFullBackup();
+    return financeRepository.exportFullBackup();
   }, []);
 
   const importFullBackup = useCallback(
     async (backup: FullBackupData): Promise<boolean> => {
       try {
-        const res = await localFinanceRepository.importFullBackup(backup);
+        const res = await financeRepository.importFullBackup(backup);
         await refreshData();
         showToast('Backup restored successfully');
         return res;
@@ -618,7 +618,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   const clearAllData = useCallback(async (): Promise<boolean> => {
-    const res = await localFinanceRepository.clearAllData();
+    const res = await financeRepository.clearAllData();
     await refreshData();
     showToast('All financial data cleared', 'info');
     return res;
