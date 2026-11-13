@@ -45,7 +45,7 @@ export const Profile: React.FC = () => {
     event.preventDefault();
     if (!user) return;
     if (fullName.trim().length < 2) { setError('Enter your full name.'); return; }
-    if (!/^\\+?[0-9\\s()-]{7,20}$/.test(phone.trim())) { setError('Enter a valid phone number.'); return; }
+    if (!/^\+?[0-9\s()-]{7,20}$/.test(phone.trim())) { setError('Enter a valid phone number.'); return; }
     setSaving(true);
     setError('');
     setSaved(false);
