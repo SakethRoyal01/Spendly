@@ -195,6 +195,8 @@ export interface Budget {
   updatedAt: string;
 }
 
+export type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
 export interface RecurringTransaction {
   id: string;
   description: string;
@@ -203,7 +205,7 @@ export interface RecurringTransaction {
   category: string;
   sourceAccountId: string;
   paymentMethod: PaymentMethod;
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  frequency: RecurringFrequency;
   startDate: string;
   nextDueDate: string;
   isActive: boolean;
