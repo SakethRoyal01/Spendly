@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useAuth } from '../../core/auth/AuthContext';
 import { useFinance } from '../../core/finance/useFinance';
 import { useTheme } from '../../shared/theme/useTheme';
 import { ConfirmDialog } from '../../shared/components/ui/ConfirmDialog';
@@ -26,6 +27,8 @@ export const Settings: React.FC = () => {
     showToast,
   } = useFinance();
   const { setTheme, isDark } = useTheme();
+  const { user, signOut } = useAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -349,6 +352,22 @@ export const Settings: React.FC = () => {
             Clear Data
           </button>
         </div>
+      </div>
+
+      {/* Account session */}
+      <div className="bg-[var(--bg-surface)] rounded-3xl p-6 sm:p-8 border border-[var(--border-subtle)] shadow-xs space-y-3">
+        <div>
+          <h2 className="text-xs uppercase tracking-[0.2em] font-extrabold text-[var(--text-disabled)]">Account</h2>
+          <p className="text-sm font-semibold text-[var(--text-primary)] mt-1">{user?.email}</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">Your Spendly session is secured by Supabase Auth.</p>
+        </div>
+        <button type="button" disabled={isSigningOut} onClick={async () => {
+          setIsSigningOut(true);
+          try { await signOut(); } catch (error) { showToast(error instanceof Error ? error.message : 'Could not sign out', 'error'); }
+          finally { setIsSigningOut(false); }
+        }} className="w-full py-3 px-4 rounded-2xl border border-[var(--border-subtle)] text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--bg-input)] disabled:opacity-50">
+          {isSigningOut ? 'Signing out…' : 'Sign out'}
+        </button>
       </div>
 
       {/* 5. Future Backend & Database Notice */}
