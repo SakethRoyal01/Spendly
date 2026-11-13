@@ -89,19 +89,41 @@ export async function importLocalFinanceData(): Promise<FinanceImportResult> {
   const { error } = await supabase.rpc('import_finance_backup', { p_backup: payload });
   if (error) throw new Error(`Could not import finance data: ${error.message}`);
 
-  const { error: splitError } = await supabase.rpc('import_transaction_splits', {
-    p_splits: payload.transactionSplits,
-  });
-  if (splitError) throw new Error(`Finance records were imported, but split payments need retrying: ${splitError.message}`);
+  // Verify the exact imported IDs in every table, not just aggregate user totals.
+  // This also makes retries safe when the user already has cloud records.
+  const checks: Array<{ table: string; ids: string[] }> = [
+    { table: 'accounts', ids: payload.accounts.map(row => row.id) },
+    { table: 'transactions', ids: payload.transactions.map(row => row.id) },
+    { table: 'transaction_splits', ids: payload.transactionSplits.map(row => row.id) },
+    { table: 'transfers', ids: payload.transfers.map(row => row.id) },
+    { table: 'ledger_entries', ids: payload.ledgerEntries.map(row => row.id) },
+    { table: 'savings_pots', ids: payload.savingsPots.map(row => row.id) },
+    { table: 'savings_contributions', ids: payload.savingsContributions.map(row => row.id) },
+    { table: 'savings_withdrawals', ids: payload.savingsWithdrawals.map(row => row.id) },
+    { table: 'budgets', ids: payload.budgets.map(row => row.id) },
+    { table: 'recurring_transactions', ids: payload.recurring.map(row => row.id) },
+    { table: 'recurring_occurrences', ids: payload.occurrences.map(row => row.id) },
+    { table: 'financial_notifications', ids: payload.notifications.map(row => row.id) },
+  ];
 
-  const [{ count: accountCount, error: accountError }, { count: transactionCount, error: transactionError }] = await Promise.all([
-    supabase.from('accounts').select('id', { count: 'exact', head: true }),
-    supabase.from('transactions').select('id', { count: 'exact', head: true }),
-  ]);
-  if (accountError) throw accountError;
-  if (transactionError) throw transactionError;
-  if ((accountCount ?? 0) < backup.accounts.length || (transactionCount ?? 0) < backup.transactions.length) {
-    throw new Error('Import verification did not match the local account and transaction totals. Your local data is still intact; retry the import.');
+  for (const check of checks) {
+    if (check.ids.length === 0) continue;
+    const { count, error: verifyError } = await supabase
+      .from(check.table)
+      .select('id', { count: 'exact', head: true })
+      .in('id', check.ids);
+    if (verifyError) throw new Error(`Import verification failed for ${check.table}: ${verifyError.message}`);
+    if ((count ?? 0) !== check.ids.length) {
+      throw new Error(`Import verification for ${check.table} expected ${check.ids.length} records but found ${count ?? 0}. Your local data is still intact; retry the import.`);
+    }
+  }
+
+  const { count: preferenceCount, error: preferenceError } = await supabase
+    .from('user_preferences')
+    .select('user_id', { count: 'exact', head: true });
+  if (preferenceError) throw preferenceError;
+  if ((preferenceCount ?? 0) < 1) {
+    throw new Error('Import verification could not confirm your preferences. Your local data is still intact; retry the import.');
   }
 
   return { accounts: backup.accounts.length, transactions: backup.transactions.length, splits: payload.transactionSplits.length };
