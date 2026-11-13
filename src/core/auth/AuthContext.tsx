@@ -19,6 +19,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Expire a remembered session after seven days without activity on this device.
+  // Each device tracks its own activity so multi-device sign-in remains supported.
+  useEffect(() => {
+    if (!session?.user?.id || loading) return;
+
+    const key = `spendly:last-active:${session.user.id}`;
+    const now = Date.now();
+    let lastActive = now;
+
+    try {
+      const stored = Number(window.localStorage.getItem(key));
+      if (Number.isFinite(stored) && stored > 0) lastActive = stored;
+    } catch {
+      // If browser storage is unavailable, keep the active Supabase session.
+    }
+
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    if (now - lastActive > sevenDaysMs) {
+      void supabase.auth.signOut();
+      return;
+    }
+
+    const recordActivity = () => {
+      try {
+        window.localStorage.setItem(key, String(Date.now()));
+      } catch {
+        // Session persistence remains managed by Supabase if storage is restricted.
+      }
+    };
+
+    recordActivity();
+    const events: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
+    events.forEach((event) => window.addEventListener(event, recordActivity, { passive: true }));
+    return () => events.forEach((event) => window.removeEventListener(event, recordActivity));
+  }, [session?.user?.id, loading]);
+
   useEffect(() => {
     let active = true;
     void supabase.auth.getSession().then(({ data, error }) => {
