@@ -1275,6 +1275,7 @@ export class LocalFinanceRepository implements FinanceRepository {
       budgets: await this.getBudgets(),
       recurring: await this.getRecurring(),
       occurrences: await this.getOccurrences(),
+      notifications: await this.getNotifications(),
       preferences: await this.getPreferences(),
     };
   }
@@ -1294,6 +1295,7 @@ export class LocalFinanceRepository implements FinanceRepository {
     safeStorage.set(KEYS.BUDGETS, backup.budgets || []);
     safeStorage.set(KEYS.RECURRING, backup.recurring || []);
     safeStorage.set(KEYS.OCCURRENCES, backup.occurrences || []);
+    safeStorage.set(KEYS.NOTIFICATIONS, backup.notifications || []);
     if (backup.preferences) {
       safeStorage.set(KEYS.PREFERENCES, backup.preferences);
     }
