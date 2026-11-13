@@ -15,8 +15,7 @@ async function requireUserId(): Promise<string> {
   return data.user.id;
 }
 
-async function saveSnapshot(userId: string): Promise<void> {
-  const backup: FullBackupData = await localFinanceRepository.exportFullBackup();
+async function saveSnapshot(userId: string, backup: FullBackupData): Promise<void> {
   const { error } = await supabase
     .from('user_finance_snapshots')
     .upsert(
@@ -44,7 +43,7 @@ async function loadUserSnapshot(userId: string): Promise<void> {
   } else {
     // LocalFinanceRepository creates the app's default zero-balance wallets.
     await localFinanceRepository.initialize();
-    await saveSnapshot(userId);
+    await saveSnapshot(userId, await localFinanceRepository.exportFullBackup());
   }
 }
 
@@ -81,12 +80,17 @@ export const financeRepository: RepositoryWithInitialize = new Proxy(
 
       return async (...args: unknown[]) => {
         await initializeForCurrentUser();
-        const result = await member.apply(target, args);
-
-        // Serialize snapshots so rapid consecutive actions cannot overwrite a
-        // newer state with an older export.
         const userId = await requireUserId();
-        persistenceQueue = persistenceQueue.then(() => saveSnapshot(userId));
+        const result = await member.apply(target, args);
+        const activeUserId = await requireUserId();
+        if (activeUserId !== userId) {
+          throw new Error('Your session changed before this update could be saved. Please reload your account.');
+        }
+
+        // Capture this user's state before queuing the network write. This
+        // prevents a fast account switch from exporting the next user's cache.
+        const backup = await localFinanceRepository.exportFullBackup();
+        persistenceQueue = persistenceQueue.then(() => saveSnapshot(userId, backup));
         await persistenceQueue;
         return result;
       };
