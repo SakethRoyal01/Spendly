@@ -10,6 +10,8 @@ export const AuthPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>(searchParams.get('mode') === 'reset' ? 'reset' : 'signin');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,7 +27,9 @@ export const AuthPage: React.FC = () => {
     try {
       if (mode === 'signup') {
         if (password.length < 8) throw new Error('Use a password with at least 8 characters.');
-        const result = await signUp(email, password);
+        if (fullName.trim().length < 2) throw new Error('Enter your full name.');
+        if (!/^\\+?[0-9\\s()-]{7,20}$/.test(phone.trim())) throw new Error('Enter a valid phone number.');
+        const result = await signUp(fullName, phone, email, password);
         if (result.needsEmailConfirmation) {
           setMessage('Account created. Check your inbox and confirm your email before signing in.');
         } else {
@@ -66,7 +70,7 @@ export const AuthPage: React.FC = () => {
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           <p className="text-sm text-white/55 mt-2 mb-7">{description}</p>
           <form onSubmit={submit} className="space-y-4">
-            {mode !== 'reset' && <label className="block text-sm text-white/70">Email address<input required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-white/35" placeholder="you@example.com" /></label>}
+            {mode !== 'reset' && <label className="block text-sm text-white/70">Email address<input required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-[#F05010]" placeholder="you@example.com" /></label>}
             {mode !== 'forgot' && <label className="block text-sm text-white/70">Password<input required type="password" autoComplete={mode === 'signup' || mode === 'reset' ? 'new-password' : 'current-password'} value={password} onChange={e => setPassword(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-white/35" placeholder="At least 8 characters" minLength={8} /></label>}
             {mode === 'reset' && <label className="block text-sm text-white/70">Confirm password<input required type="password" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-white/35" /></label>}
             {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
