@@ -79,7 +79,7 @@ export const AuthPage: React.FC = () => {
       const raw = cause instanceof Error ? cause.message : '';
       const normalized = raw.toLowerCase();
       if (normalized.includes('rate limit') || normalized.includes('email rate limit')) {
-        setError('Too many confirmation emails have been requested recently. Please wait a while before trying again. You can also check your inbox and spam folder for an earlier email.');
+        setError('Too many verification emails have been requested recently. Please wait before requesting another code, then check your inbox and spam folder.');
       } else if (normalized.includes('already registered') || normalized.includes('already been registered')) {
         setError('An account with this email already exists. Try signing in or use Forgot password.');
       } else if (normalized.includes('invalid login credentials')) {
