@@ -1,9 +1,9 @@
 -- Per-user cloud persistence for Spendly finance data.
 create table if not exists public.user_finance_snapshots (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  data jsonb not null default '{}'::jsonb,
+  backup jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now(),
-  constraint user_finance_snapshots_data_object check (jsonb_typeof(data) = 'object')
+  constraint user_finance_snapshots_backup_object check (jsonb_typeof(backup) = 'object')
 );
 
 alter table public.user_finance_snapshots enable row level security;
