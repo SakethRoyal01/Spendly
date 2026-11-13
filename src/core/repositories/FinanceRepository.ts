@@ -55,8 +55,8 @@ export interface FinanceRepository {
   // Transactions (Expenses & Incomes)
   getTransactions(): Promise<Transaction[]>;
   getTransactionById(id: string): Promise<Transaction | null>;
-  createExpense(input: CreateTransactionInput): Promise<Transaction>;
-  createIncome(input: CreateTransactionInput): Promise<Transaction>;
+  createExpense(input: CreateTransactionInput, customId?: string, customCreatedAt?: string): Promise<Transaction>;
+  createIncome(input: CreateTransactionInput, customId?: string, customCreatedAt?: string): Promise<Transaction>;
   updateTransaction(id: string, updates: UpdateTransactionInput): Promise<Transaction>;
   deleteTransaction(id: string): Promise<boolean>;
 
