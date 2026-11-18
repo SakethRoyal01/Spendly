@@ -109,7 +109,7 @@ Vercel settings: **Vite**, install `npm ci`, build `npm run build`, output `dist
 - Never commit service-role/secret keys, database passwords, tokens, private keys, personal exports, or real financial records.
 - Verify that the migration is applied and that effective RLS policies are correct in the hosted Supabase project.
 
-Public source code can be cloned. Protect data with server-side authorization, RLS, and safe credential handlingnot by attempting to hide frontend code. See [SECURITY.md](SECURITY.md).
+Public source code can be cloned. Protect data with server-side authorization, RLS, and safe credential handling, not by attempting to hide frontend code. See [SECURITY.md](SECURITY.md).
 
 ## Repository layout
 
