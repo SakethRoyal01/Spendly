@@ -1,58 +1,77 @@
-# Spendly deployment (Netlify + Supabase)
+# Spendly deployment guide
 
-Spendly is a Vite single-page application. Netlify hosts the built frontend; Supabase provides authentication, PostgreSQL, row-level security, and per-user finance snapshots. The current architecture does not require a separate Node/Express server.
+Spendly is a Vite single-page application hosted on Vercel. Supabase provides authentication and PostgreSQL-backed finance snapshot persistence. There is no separate Express/Node API server in the current architecture.
 
-## 1. Build locally
+## Prerequisites
 
-```bash
-npm install
-npm run build
-```
+- A Supabase project.
+- A Vercel project connected to this GitHub repository.
+- Node.js 22 or later for local builds.
+- The migration in `supabase/migrations/` applied to the target Supabase project.
 
-The production output is in `dist/`. The `public/_redirects` file is copied into the build and keeps React Router routes working on direct refresh.
+## Environment variables
 
-## 2. Set the Supabase environment variables before building
+The frontend reads these exact variables in `src/core/supabase/client.ts`:
 
-The app reads these exact names in `src/core/supabase/client.ts`:
+| Variable | Value |
+|---|---|
+| `VITE_SUPABASE_URL` | Supabase Project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key |
 
-- `VITE_SUPABASE_URL`: Supabase Project URL (Project Settings → API).
-- `VITE_SUPABASE_PUBLISHABLE_KEY`: Supabase publishable key (Project Settings → API Keys).
-
-For a drag-and-drop deployment, create/update your local `.env` file before running the build:
+Copy `.env.example` to `.env.local` and fill in the values:
 
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_YOUR_KEY
+VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
 ```
 
-Do not commit `.env`. Never put a Supabase secret or `service_role` key in the frontend. Vite embeds `VITE_*` values into the build output, so changing a hosting environment variable will not update an already-built `dist`.
+Never commit `.env.local`. Vite embeds `VITE_*` values into the browser bundle, so they must be considered public. Never use a Supabase secret key, `service_role` key, or database password in a frontend variable.
 
-## 3. Deploy the build
+## Vercel build settings
 
-Deploy the generated `dist` folder using Netlify Drop. Upload the build output, not the source project.
+| Setting | Value |
+|---|---|
+| Framework preset | Vite |
+| Install command | `npm ci` |
+| Build command | `npm run build` |
+| Output directory | `dist` |
+| Root directory | Repository root |
 
-## 4. Configure Supabase Auth after the first deployment
+Add both environment variables in Vercel Project Settings for every environment that needs to run the app. Trigger a new deployment after changing them. The repository's `vercel.json` provides the SPA rewrite for client-side routes.
 
-After Netlify gives you the public HTTPS URL:
+## Database migration
 
-1. Open Supabase → Authentication → URL Configuration.
-2. Set **Site URL** to the exact deployed URL.
-3. Add the URL to **Redirect URLs**, for example `https://YOUR-SITE.netlify.app/**`.
-4. Save.
+Apply the SQL file under `supabase/migrations/` to the intended Supabase project using the SQL Editor or Supabase CLI. It creates `public.user_finance_snapshots`, enables Row Level Security, and defines authenticated-user policies scoped to `auth.uid()`.
 
-Add any future custom domain to Redirect URLs as well.
+After applying it, verify that RLS is enabled, authenticated users can access only their own row, anonymous users have no table privileges, and no additional permissive policies grant broader access. A migration committed to Git is not automatically applied to the hosted database.
 
-## 5. Production verification
+## Supabase Auth URLs
 
-- Sign up and sign in.
-- Add an expense and wait for the save to complete.
-- Refresh and sign in again.
-- Sign in to the same account from another device.
-- Confirm a second account cannot see the first account's data.
-- Check browser DevTools Console and Network for failed Supabase requests.
+In Supabase Authentication > URL Configuration:
 
-## Important limitations
+1. Set Site URL to the production origin.
+2. Add the production auth redirect URL(s) used by the app.
+3. Add Vercel preview URL patterns only if preview deployments should support authentication.
+4. Add the local development URL, such as `http://localhost:5173/**`, for local testing.
 
-- Drag-and-drop deployment is a static snapshot. Rebuild and upload `dist` again after code changes.
-- The current persistence design stores each user's full backup as one JSONB snapshot. Sequential access across devices is supported; simultaneous edits on multiple devices may overwrite one another.
-- Existing local browser data is not automatically migrated to the cloud. Use Spendly's backup/import flow when ready to restore your backup.
+Use the exact origins and redirect paths configured for the deployed app.
+
+## Production verification
+
+- [ ] App loads and refreshes correctly on nested routes.
+- [ ] New users can register and complete configured email verification.
+- [ ] Sign-in, sign-out, and password reset work.
+- [ ] Finance changes persist after refresh.
+- [ ] The same account retrieves its data from another browser/device.
+- [ ] A second account cannot read or overwrite the first account's snapshot.
+- [ ] Signed-out clients cannot read or write finance snapshots.
+- [ ] Browser console and network requests show no unexpected errors.
+- [ ] No secret key or database credential appears in the built frontend bundle.
+
+## Known persistence limitation
+
+The current implementation stores a complete JSONB finance snapshot per user. It is not realtime collaborative synchronization. Overlapping changes from two devices can race, and the latest snapshot write can overwrite an earlier one. See [ACCOUNT_DATA_PERSISTENCE.md](docs/ACCOUNT_DATA_PERSISTENCE.md).
+
+## Rollback
+
+For a frontend rollback, use Vercel deployment history to promote a previously verified deployment. Do not roll back database migrations automatically without reviewing schema compatibility and whether user data has already been written using the new schema.
