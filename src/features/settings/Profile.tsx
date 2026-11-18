@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Check, Loader2, Mail, Phone, UserRound } from 'lucide-react';
-import { useAuth } from '../../core/auth/AuthContext';
+import { useAuth } from '../../core/auth/useAuth';
 import { supabase } from '../../core/supabase/client';
 
 type ProfileRecord = { full_name: string; phone: string; created_at: string };
