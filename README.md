@@ -1,93 +1,141 @@
-# Spendly — Personal Finance Journal
+# Spendly
 
-Spendly is a minimalist personal finance journal built with React 18, TypeScript, Vite, Tailwind CSS 4, and Framer Motion. Engineered around an editorial notebook aesthetic, it focuses on daily expense recording with an interactive date anchor, inline ledger entries, monthly calendar review, and chronological archive.
+<p align="center">
+  <img src="public/logo.png" alt="Spendly" width="104" />
+</p>
 
----
+<h3 align="center">A clearer way to understand your money.</h3>
+<p align="center">A responsive personal-finance workspace for everyday expenses, wallets, savings, budgets, and spending insights.</p>
 
-## 🎨 Design Philosophy & Identity
+<p align="center">
+  <a href="https://spendly-roan-omega.vercel.app/">Live deployment</a> 
+  <a href="https://github.com/SakethRoyal01/Spendly/issues">Issues</a> 
+  <a href="https://github.com/SakethRoyal01">Developer</a>
+</p>
 
-- **Deep Navy**: `#082052`
-- **Warm Ivory**: `#F8F0E5`
+> **Demo access:** the current Vercel project has access protection enabled. The deployment may require sign-in or access approval. Enable a public demo before broad promotion.
 
-Spendly avoids generic dashboard card clutter, neon gradients, and excess containers. Instead, it organizes financial data using **editorial typography, whitespace, and subtle separators**.
+## About
 
-### Dual Themes
-- **Light Mode**: Warm Ivory (`#F8F0E5`) paper background, Deep Navy (`#082052`) text and accents, with muted navy separators.
-- **Dark Mode**: Deep Navy (`#082052`) background, Warm Ivory (`#F8F0E5`) typography and accents, with muted cream separators.
-- Persisted automatically in browser LocalStorage (`spendly_theme_mode`).
+Spendly is a personal finance tracker built to make day-to-day money management easier to record and understand. It brings a daily expense journal, wallet balances, transfers, savings goals, budgets, recurring payments, and financial insights into one responsive interface.
 
----
+The application uses a modular React/TypeScript frontend, a finance repository layer, Supabase Auth, and Supabase Postgres for per-user cloud persistence.
 
-## 📖 Homepage Hierarchy
+## Features
 
-1. **Minimal Header**: Brand identity with editorial serif typography, navigation links, and theme toggle.
-2. **Prominent Date Anchor**:
-   - Interactive day and date display (e.g. `WEDNESDAY, 11 NOVEMBER 2026`).
-   - Previous and next day navigation.
-   - Click to open the calendar date picker to choose any date.
-   - Subtle "Today" indicator.
-3. **Daily Expense Ledger**:
-   - Clean horizontal table layout with serial number (`01`, `02`...), description, and right-aligned amount in INR (`₹`).
-   - Inline `+ Add expense` row: type description, select category, enter amount, press **Enter** to save, **Esc** to cancel.
-   - Inline row editing and deletion with confirmation dialog.
-4. **Daily Total**:
-   - Immediate calculation of the total spent for the active day in bold editorial serif typography.
-   - Clean empty state when no expenses are logged.
-5. **Monthly Overview Summary**:
-   - Typographic metrics: Total spent this month, today's spend, and average daily spend based on elapsed days.
-6. **Calendar Section**:
-   - Monthly calendar with navigation, indicator dots for days with expenses, and single-click date selection.
-7. **Expense History & Archive**:
-   - Filterable ledger with description search, category filters, month selector, and CSV export.
+- Daily expense recording with descriptions, categories, dates, and payment methods.
+- Cash, UPI/bank, and split-payment tracking.
+- Wallet and account balances, transfers, deposits, and transaction history.
+- Savings pots with contributions and withdrawals.
+- Monthly category budgets and recurring payment schedules.
+- Calendar-based activity history and spending analytics.
+- Sign-up, email verification where configured, sign-in, sign-out, and password reset.
+- User-specific cloud snapshots protected by database Row Level Security.
+- Responsive navigation and light/dark themes.
 
----
+## Tech stack
 
-## 🛠️ Architecture
+| Layer | Stack |
+|---|---|
+| Frontend | React 18, TypeScript, Vite |
+| UI | Tailwind CSS 4, Framer Motion, Lucide React |
+| Charts | Recharts |
+| Utilities | date-fns |
+| Auth | Supabase Auth |
+| Data | Supabase Postgres, JSONB, Row Level Security |
+| Hosting | Vercel |
 
-Spendly uses the **Repository Pattern** to decouple storage from UI components:
+## Architecture
 
-```
-src/
-├── components/
-│   ├── journal/           # DateAnchor, DailyLedgerList, OverviewSummary, JournalCalendarSection, ExpenseHistorySection
-│   ├── layout/            # Header, AppLayout
-│   └── ui/                # Button, Modal, ConfirmDialog, Badge, ToastContainer
-├── context/
-│   ├── ExpenseContext.tsx
-│   ├── expenseContextInstance.ts
-│   ├── ThemeContext.tsx
-│   └── themeContextInstance.ts
-├── hooks/
-│   ├── useExpenses.ts
-│   └── useTheme.ts
-├── services/
-│   └── repositories/
-│       ├── ExpenseRepository.ts       # Storage interface
-│       └── LocalExpenseRepository.ts  # LocalStorage implementation
-├── types/
-│   └── expense.ts         # Domain model with nullable userId for Supabase
-└── utils/
-    ├── calculations.ts    # Reactive derived metrics
-    ├── categories.ts      # Expense categories
-    ├── currency.ts        # INR (₹) formatting (en-IN)
-    ├── dates.ts           # date-fns utilities
-    └── csv.ts             # CSV generator
+```mermaid
+flowchart TD
+  U[User] --> APP[React application]
+  APP --> AUTH[Supabase Auth]
+  APP --> FIN[Finance context]
+  FIN --> REPO[Finance repository]
+  REPO --> LOCAL[Local finance domain adapter]
+  REPO --> CLOUD[Authenticated cloud adapter]
+  CLOUD --> DB[(Supabase Postgres)]
+  DB --> RLS[Row Level Security]
+  RLS --> USER[Rows scoped to auth.uid()]
 ```
 
----
+The authenticated repository verifies the current Supabase user, loads the row owned by that user, and persists finance changes to that same row. The migration in `supabase/migrations/` defines owner-scoped SELECT, INSERT, and UPDATE policies.
 
-## 🚀 Getting Started
+**Persistence limitation:** the current design stores one complete JSONB backup per user in `user_finance_snapshots.backup`. It is not realtime collaboration; overlapping writes from multiple devices can race, with the latest snapshot potentially replacing an earlier one. A revision-aware sync model is a future improvement.
+
+## Run locally
+
+**Requirements:** Node.js 22+, npm, and a Supabase project.
 
 ```bash
-# Install dependencies
+git clone https://github.com/SakethRoyal01/Spendly.git
+cd Spendly
 npm install
+```
 
-# Start development server
+Copy `.env.example` to `.env.local` (PowerShell: `Copy-Item .env.example .env.local`) and set:
+
+```env
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
+```
+
+Apply the SQL migration in `supabase/migrations/` to your Supabase project, then configure the local and production authentication redirect URLs in Supabase Auth settings.
+
+``gbash
 npm run dev
+```
 
-# Run linter
+Quality commands:
+
+```bash
 npm run lint
-
-# Build production bundle
+npm test
 npm run build
 ```
+
+`npm test` currently runs lightweight scenario-based financial arithmetic/ledger checks. It does not replace integration tests for Supabase Auth, RLS, or multi-user isolation.
+
+## Deployment
+
+Vercel settings: **Vite**, install `npm install`, build `npm run build`, output `dist`. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to the required Vercel environments. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Security
+
+- `.env` files containing real values are ignored; `.env.example` contains placeholders.
+- Every `VITE_*` variable is bundled into the browser and must be considered public.
+- A Supabase publishable key is intended for client use; it does not replace Row Level Security.
+- Never commit service-role/secret keys, database passwords, tokens, private keys, personal exports, or real financial records.
+- Verify that the migration is applied and that effective RLS policies are correct in the hosted Supabase project.
+
+Public source code can be cloned. Protect data with server-side authorization, RLS, and safe credential handling, not by attempting to hide frontend code. See [SECURITY.md](SECURITY.md).
+
+## Repository layout
+
+```text
+src/
+ app/          # App shell, providers, routes
+ core/         # Auth, finance state, repositories, Supabase client
+ features/     # Expenses, wallets, savings, budgets, insights, etc.
+ shared/       # Layout, UI, navigation, theme, utilities
+ types/        # Finance domain types
+supabase/
+ migrations/   # Database schema and RLS migrations
+docs/             # Persistence and implementation notes
+scripts/          # Scenario checks
+```
+
+## Roadmap
+
+- [ ] Add current, privacy-safe screenshots and a product walkthrough.
+- [ ] Add integration tests for authentication, RLS, and account isolation.
+- [ ] Introduce revision-aware persistence to prevent cross-device write races.
+- [ ] Expand tests around actual finance-domain operations.
+- [ ] Enable an accessible public demo with appropriate safeguards.
+
+## Author
+
+**Saketh Rayalu**  [GitHub](https://github.com/SakethRoyal01)  [LinkedIn](https://www.linkedin.com/in/sakethrayalu/)
+
+For bugs or suggestions, open an issue with clear reproduction steps.
