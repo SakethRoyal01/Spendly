@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../core/auth/AuthContext';
+import { useAuth } from '../../core/auth/useAuth';
 import { useFinance } from '../../core/finance/useFinance';
 import { useTheme } from '../../shared/theme/useTheme';
 import { ConfirmDialog } from '../../shared/components/ui/ConfirmDialog';
