@@ -1,7 +1,8 @@
 import React from 'react';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '../shared/theme/ThemeContext';
-import { AuthProvider, useAuth } from '../core/auth/AuthContext';
+import { AuthProvider } from '../core/auth/AuthContext';
+import { useAuth } from '../core/auth/useAuth';
 import { FinanceProvider } from '../core/finance/FinanceContext';
 import { NavigationProvider } from '../shared/navigation/NavigationContext';
 import { AuthPage } from '../features/auth/AuthPage';
