@@ -32,7 +32,7 @@ Never commit `.env.local`. Vite embeds `VITE_*` values into the browser bundle, 
 | Setting | Value |
 |---|---|
 | Framework preset | Vite |
-| Install command | `npm ci` |
+| Install command | `npm install` |
 | Build command | `npm run build` |
 | Output directory | `dist` |
 | Root directory | Repository root |
