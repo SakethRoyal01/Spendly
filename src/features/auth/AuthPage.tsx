@@ -4,7 +4,7 @@ import {
   ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, Wallet,
   ShieldCheck, Sparkles, Mail, LockKeyhole, UserRound, Phone,
 } from 'lucide-react';
-import { useAuth } from '../../core/auth/AuthContext';
+import { useAuth } from '../../core/auth/useAuth';
 
 type Mode = 'signin' | 'signup' | 'verify' | 'forgot' | 'reset';
 
