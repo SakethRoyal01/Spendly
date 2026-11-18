@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Check, Loader2, Mail, Phone, UserRound } from 'lucide-react';
 import { useAuth } from '../../core/auth/useAuth';
@@ -6,21 +6,11 @@ import { supabase } from '../../core/supabase/client';
 
 export const Profile: React.FC = () => {
   const { user } = useAuth();
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [createdAt, setCreatedAt] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [fullName, setFullName] = useState(() => String(user?.user_metadata?.full_name || ''));
+  const [phone, setPhone] = useState(() => String(user?.user_metadata?.phone || ''));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    setFullName(String(user.user_metadata?.full_name || ''));
-    setPhone(String(user.user_metadata?.phone || ''));
-    setCreatedAt(user.created_at);
-    setLoading(false);
-  }, [user]);
 
   const saveProfile = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -71,10 +61,7 @@ export const Profile: React.FC = () => {
           </div>
         </div>
 
-        {loading ? (
-          <div className="py-10 flex items-center justify-center gap-2 text-sm text-[var(--text-secondary)]"><Loader2 className="w-4 h-4 animate-spin" /> Loading profile…</div>
-        ) : (
-          <form onSubmit={saveProfile} className="space-y-5">
+        <form onSubmit={saveProfile} className="space-y-5">
             <label className={labelClass}>Full name
               <span className="relative block"><UserRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-disabled)]" /><input required maxLength={120} value={fullName} onChange={e => setFullName(e.target.value)} className={fieldClass + ' pl-10'} placeholder="Your full name" /></span>
             </label>
@@ -85,14 +72,13 @@ export const Profile: React.FC = () => {
             <label className={labelClass}>Phone number
               <span className="relative block"><Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-disabled)]" /><input required type="tel" maxLength={32} value={phone} onChange={e => setPhone(e.target.value)} className={fieldClass + ' pl-10'} placeholder="+91 98765 43210" /></span>
             </label>
-            {createdAt && <div className="pt-4 border-t border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">Member since <span className="font-bold text-[var(--text-primary)]">{new Date(createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>}
+            {user?.created_at && <div className="pt-4 border-t border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">Member since <span className="font-bold text-[var(--text-primary)]">{new Date(user.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>}
             {error && <p role="alert" className="text-xs font-medium text-red-500">{error}</p>}
             {saved && <p role="status" className="text-xs font-semibold text-emerald-500 flex items-center gap-2"><Check className="w-4 h-4" /> Profile updated successfully.</p>}
             <button disabled={saving} type="submit" className="w-full sm:w-auto rounded-xl bg-[#F05010] px-6 py-3 text-xs font-extrabold text-white hover:bg-[#d94308] disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />} {saving ? 'Saving…' : 'Save changes'}
             </button>
           </form>
-        )}
       </section>
     </div>
   );
