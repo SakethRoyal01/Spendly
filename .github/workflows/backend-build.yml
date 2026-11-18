@@ -1,15 +1,26 @@
-name: Backend branch build
+name: Spendly CI
 
 on:
   push:
     branches:
-      - backend/supabase-integration-refactor
+      - main
+      - feature/**
+      - backend/**
+      - refactor/**
   pull_request:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: spendly-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  quality:
+    name: Lint, test, and build
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -20,8 +31,10 @@ jobs:
           node-version: 22
           cache: npm
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
-      - name: Run scenario tests
+        run: npm ci
+      - name: Run lint
+        run: npm run lint
+      - name: Run scenario checks
         run: npm test
-      - name: Type-check and build
+      - name: Build production bundle
         run: npm run build
