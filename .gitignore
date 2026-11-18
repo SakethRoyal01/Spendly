@@ -1,5 +1,31 @@
-# Logs
-logs
+# Dependencies
+node_modules/
+
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Build output
+dist/
+dist-ssr/
+build/
+out/
+*.tsbuildinfo
+
+# Vercel local project metadata
+.vercel/
+
+# Test and coverage output
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+*.lcov
+
+# Logs and diagnostics
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,26 +33,36 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Dependencies
-node_modules/
+# Local databases and generated data
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.backup
+*.tmp
+*.temp
 
-# Production build outputs
-dist/
-dist-ssr/
+# Supabase local state (keep supabase/migrations tracked)
+.supabase/
 
-# Local Environment files
-.env
-.env.local
-.env.*.local
-*.local
-
-# Editor & OS files
+# Editor and IDE files
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
-*.ntvs*
-*.njsproj
+*.user
+*.userosscache
 *.sln
 *.sw?
+*.code-workspace
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Tool caches
+.eslintcache
+.stylelintcache
+.parcel-cache/
+.turbo/
