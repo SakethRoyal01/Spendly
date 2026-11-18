@@ -17,8 +17,8 @@ const SessionGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   if (!user || location.pathname === '/auth') return <AuthPage />;
 
-  // Local-only mode: authentication gates the app, but local finance records
-  // are not bound to this account or uploaded to Supabase.
+  // FinanceProvider uses the authenticated repository to hydrate and persist
+  // the finance snapshot owned by the signed-in Supabase user.
   return (
     <FinanceProvider>
       <NavigationProvider>{children}</NavigationProvider>
