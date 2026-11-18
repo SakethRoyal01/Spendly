@@ -71,7 +71,7 @@ The authenticated repository verifies the current Supabase user, loads the row o
 ```bash
 git clone https://github.com/SakethRoyal01/Spendly.git
 cd Spendly
-npm ci
+npm install
 ```
 
 Copy `.env.example` to `.env.local` (PowerShell: `Copy-Item .env.example .env.local`) and set:
@@ -99,7 +99,7 @@ npm run build
 
 ## Deployment
 
-Vercel settings: **Vite**, install `npm ci`, build `npm run build`, output `dist`. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to the required Vercel environments. See [DEPLOYMENT.md](DEPLOYMENT.md).
+Vercel settings: **Vite**, install `npm install`, build `npm run build`, output `dist`. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to the required Vercel environments. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Security
 
