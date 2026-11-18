@@ -4,8 +4,6 @@ import { ArrowLeft, Check, Loader2, Mail, Phone, UserRound } from 'lucide-react'
 import { useAuth } from '../../core/auth/useAuth';
 import { supabase } from '../../core/supabase/client';
 
-type ProfileRecord = { full_name: string; phone: string; created_at: string };
-
 export const Profile: React.FC = () => {
   const { user } = useAuth();
   const [fullName, setFullName] = useState('');
@@ -17,28 +15,11 @@ export const Profile: React.FC = () => {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    let active = true;
-    const loadProfile = async () => {
-      if (!user) return;
-      setLoading(true);
-      const { data, error: loadError } = await supabase
-        .from('profiles')
-        .select('full_name, phone, created_at')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (!active) return;
-      if (loadError) {
-        setError(loadError.message);
-      } else {
-        const profile = data as ProfileRecord | null;
-        setFullName(profile?.full_name || String(user.user_metadata?.full_name || ''));
-        setPhone(profile?.phone || String(user.user_metadata?.phone || ''));
-        setCreatedAt(profile?.created_at || user.created_at);
-      }
-      setLoading(false);
-    };
-    void loadProfile();
-    return () => { active = false; };
+    if (!user) return;
+    setFullName(String(user.user_metadata?.full_name || ''));
+    setPhone(String(user.user_metadata?.phone || ''));
+    setCreatedAt(user.created_at);
+    setLoading(false);
   }, [user]);
 
   const saveProfile = async (event: React.FormEvent) => {
@@ -54,11 +35,11 @@ export const Profile: React.FC = () => {
     setSaving(true);
     setError('');
     setSaved(false);
-    const { error: saveError } = await supabase.from('profiles').upsert({
-      id: user.id,
-      full_name: fullName.trim(),
-      phone: phone.trim(),
-      updated_at: new Date().toISOString(),
+    const { error: saveError } = await supabase.auth.updateUser({
+      data: {
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+      },
     });
     if (saveError) setError(saveError.message);
     else setSaved(true);
