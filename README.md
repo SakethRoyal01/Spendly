@@ -9,7 +9,6 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![CI](https://github.com/SakethRoyal01/Spendly/actions/workflows/ci.yml/badge.svg)
 
-<!-- TODO: replace with your deployed link, e.g. Vercel/Netlify -->
 **Live demo:** https://get-spendly.vercel.app
 
 ![Overview](docs/screenshots/overview.png)
@@ -73,7 +72,7 @@ npm run dev
 
 ## Roadmap
 
-- [ ] Deploy a live demo
+- [x] Deploy a live demo
 - [ ] Supabase backend with auth and row-level security (design in [`docs/BACKEND_INTEGRATION_PLAN.md`](docs/BACKEND_INTEGRATION_PLAN.md))
 - [ ] Unit tests that import the real app utilities (Vitest)
 - [ ] PWA / offline install
