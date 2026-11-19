@@ -7,13 +7,15 @@
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![CI](https://github.com/SakethRoyal01/Spendly/actions/workflows/ci.yml/badge.svg)
 
 <!-- TODO: replace with your deployed link, e.g. Vercel/Netlify -->
-**Live demo:** _coming soon_
+**Live demo:** https://get-spendly.vercel.app
 
-<!-- TODO: add 2-3 screenshots or a GIF here, e.g.
 ![Overview](docs/screenshots/overview.png)
--->
+![Wallets](docs/screenshots/wallets.png)
+![Insights](docs/screenshots/insights.png)
+![Dark mode](docs/screenshots/dark-mode.png)
 
 ## Features
 
