@@ -247,7 +247,7 @@ create table public.recurring_occurrences (
 Every table in Spendly mandates RLS enabled, ensuring complete data isolation between authenticated users.
 
 ```sql
--- Enable RLS across all tables
+-- Enable RLS on every table
 alter table public.profiles enable row level security;
 alter table public.accounts enable row level security;
 alter table public.transactions enable row level security;
@@ -260,26 +260,45 @@ alter table public.budgets enable row level security;
 alter table public.recurring_transactions enable row level security;
 alter table public.recurring_occurrences enable row level security;
 
--- Base RLS Policy Template for User-Owned Tables:
-create policy "Users manage their own accounts"
-  on public.accounts for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+-- profiles: keyed by id, not user_id
+create policy "Users manage own profile" on public.profiles for all
+  using (auth.uid() = id) with check (auth.uid() = id);
 
-create policy "Users manage their own transactions"
-  on public.transactions for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+-- tables with a user_id column
+create policy "Own accounts" on public.accounts for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Own transactions" on public.transactions for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Own transfers" on public.transfers for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Own savings pots" on public.savings_pots for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Own budgets" on public.budgets for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Own recurring" on public.recurring_transactions for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-create policy "Users manage their own transaction splits"
-  on public.transaction_splits for all
-  using (
-    exists (
-      select 1 from public.transactions
-      where transactions.id = transaction_splits.transaction_id
-      and transactions.user_id = auth.uid()
-    )
-  );
+-- child tables: ownership via parent (add WITH CHECK too)
+create policy "Own splits" on public.transaction_splits for all
+  using (exists (select 1 from public.transactions t
+                 where t.id = transaction_id and t.user_id = auth.uid()))
+  with check (exists (select 1 from public.transactions t
+                 where t.id = transaction_id and t.user_id = auth.uid()));
+create policy "Own contributions" on public.savings_contributions for all
+  using (exists (select 1 from public.savings_pots p
+                 where p.id = pot_id and p.user_id = auth.uid()))
+  with check (exists (select 1 from public.savings_pots p
+                 where p.id = pot_id and p.user_id = auth.uid()));
+create policy "Own withdrawals" on public.savings_withdrawals for all
+  using (exists (select 1 from public.savings_pots p
+                 where p.id = pot_id and p.user_id = auth.uid()))
+  with check (exists (select 1 from public.savings_pots p
+                 where p.id = pot_id and p.user_id = auth.uid()));
+create policy "Own occurrences" on public.recurring_occurrences for all
+  using (exists (select 1 from public.recurring_transactions r
+                 where r.id = recurring_id and r.user_id = auth.uid()))
+  with check (exists (select 1 from public.recurring_transactions r
+                 where r.id = recurring_id and r.user_id = auth.uid()));
 ```
 
 ---
@@ -291,65 +310,55 @@ To prevent race conditions and balance discrepancies during complex multi-wallet
 ### 4.1 Atomic Expense Creation with Split Deductions
 ```sql
 create or replace function create_expense_with_splits(
-  p_user_id uuid,
-  p_amount bigint,
-  p_category text,
-  p_description text,
-  p_date date,
-  p_payment_method text,
-  p_savings_pot_id uuid,
-  p_splits jsonb -- array of { account_id: uuid, amount: bigint }
-)
-returns uuid
+  p_amount bigint, p_category text, p_description text, p_date date,
+  p_payment_method text, p_savings_pot_id uuid, p_splits jsonb
+) returns uuid
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
-  v_transaction_id uuid;
-  v_split jsonb;
-  v_account_id uuid;
-  v_split_amount bigint;
-  v_current_bal bigint;
-  v_allow_overdraft boolean;
+  v_uid uuid := auth.uid();
+  v_tx uuid; v_split jsonb; v_acc uuid; v_amt bigint; v_bal bigint; v_overdraft boolean;
 begin
-  select allow_overdraft into v_allow_overdraft from public.profiles where id = p_user_id;
+  if v_uid is null then raise exception 'Not authenticated'; end if;
 
-  -- 1. Create Transaction
-  insert into public.transactions (
-    user_id, type, amount, category, description, date, payment_method, is_split, savings_pot_id
-  ) values (
-    p_user_id, 'expense', p_amount, p_category, p_description, p_date, p_payment_method, jsonb_array_length(p_splits) > 1, p_savings_pot_id
-  ) returning id into v_transaction_id;
+  select allow_overdraft into v_overdraft from profiles where id = v_uid;
 
-  -- 2. Process Splits and Deduct Balances
-  for v_split in select * from jsonb_array_elements(p_splits) loop
-    v_account_id := (v_split->>'account_id')::uuid;
-    v_split_amount := (v_split->>'amount')::bigint;
-
-    select current_balance into v_current_bal from public.accounts where id = v_account_id and user_id = p_user_id for update;
-
-    if not v_allow_overdraft and (v_current_bal - v_split_amount) < 0 then
-      raise exception 'Insufficient balance in account %', v_account_id;
-    end if;
-
-    update public.accounts
-    set current_balance = current_balance - v_split_amount,
-        updated_at = now()
-    where id = v_account_id;
-
-    insert into public.transaction_splits (transaction_id, account_id, amount)
-    values (v_transaction_id, v_account_id, v_split_amount);
-  end loop;
-
-  -- 3. If tied to a savings pot (Option A: expense deduction)
-  if p_savings_pot_id is not null then
-    update public.savings_pots
-    set current_amount = greatest(0, current_amount - p_amount),
-        updated_at = now()
-    where id = p_savings_pot_id and user_id = p_user_id;
+  if p_savings_pot_id is not null and not exists
+     (select 1 from savings_pots where id = p_savings_pot_id and user_id = v_uid) then
+    raise exception 'Invalid savings pot';
   end if;
 
-  return v_transaction_id;
+  insert into transactions (user_id, type, amount, category, description, date,
+                            payment_method, is_split, savings_pot_id)
+  values (v_uid, 'expense', p_amount, p_category, p_description, p_date,
+          p_payment_method, jsonb_array_length(p_splits) > 1, p_savings_pot_id)
+  returning id into v_tx;
+
+  for v_split in select * from jsonb_array_elements(p_splits) loop
+    v_acc := (v_split->>'account_id')::uuid;
+    v_amt := (v_split->>'amount')::bigint;
+
+    select current_balance into v_bal from accounts
+      where id = v_acc and user_id = v_uid for update;
+    if not found then raise exception 'Account not found'; end if;
+    if not v_overdraft and (v_bal - v_amt) < 0 then
+      raise exception 'Insufficient balance in account %', v_acc;
+    end if;
+
+    update accounts set current_balance = current_balance - v_amt, updated_at = now()
+      where id = v_acc and user_id = v_uid;
+    insert into transaction_splits (transaction_id, account_id, amount)
+      values (v_tx, v_acc, v_amt);
+  end loop;
+
+  if p_savings_pot_id is not null then
+    update savings_pots set current_amount = greatest(0, current_amount - p_amount),
+      updated_at = now() where id = p_savings_pot_id and user_id = v_uid;
+  end if;
+
+  return v_tx;
 end;
 $$;
 ```
