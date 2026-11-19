@@ -1,93 +1,81 @@
-# Spendly — Personal Finance Journal
+# Spendly
 
-Spendly is a minimalist personal finance journal built with React 18, TypeScript, Vite, Tailwind CSS 4, and Framer Motion. Engineered around an editorial notebook aesthetic, it focuses on daily expense recording with an interactive date anchor, inline ledger entries, monthly calendar review, and chronological archive.
+> A minimalist personal finance tracker for everyday spending in ₹. Log expenses and income, split payments across wallets, set aside savings, and see where your money goes.
 
----
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## 🎨 Design Philosophy & Identity
+<!-- TODO: replace with your deployed link, e.g. Vercel/Netlify -->
+**Live demo:** _coming soon_
 
-- **Deep Navy**: `#082052`
-- **Warm Ivory**: `#F8F0E5`
+<!-- TODO: add 2-3 screenshots or a GIF here, e.g.
+![Overview](docs/screenshots/overview.png)
+-->
 
-Spendly avoids generic dashboard card clutter, neon gradients, and excess containers. Instead, it organizes financial data using **editorial typography, whitespace, and subtle separators**.
+## Features
 
-### Dual Themes
-- **Light Mode**: Warm Ivory (`#F8F0E5`) paper background, Deep Navy (`#082052`) text and accents, with muted navy separators.
-- **Dark Mode**: Deep Navy (`#082052`) background, Warm Ivory (`#F8F0E5`) typography and accents, with muted cream separators.
-- Persisted automatically in browser LocalStorage (`spendly_theme_mode`).
+- **Daily ledger**: add, edit and delete expenses and income, with calendar-based date navigation
+- **Wallets**: cash and bank/UPI accounts with transfers between them (net worth stays unchanged)
+- **Hybrid payments**: split one expense across multiple wallets
+- **"Change" handling**: change received is netted against spending so totals stay accurate
+- **Savings pots**: contribute to goals without counting them as expenses
+- **Insights**: charts of spending patterns (Recharts)
+- **Transaction history**: searchable and filterable
+- **Backup & restore**: full JSON backup/restore plus CSV export
+- **Light/dark themes**, reduced-motion option, and in-app alerts when a wallet goes negative
+- **Private by design**: all data stays in your browser (`localStorage`), no tracking, no account needed
 
----
+## Tech Stack
 
-## 📖 Homepage Hierarchy
+React 18 · TypeScript · Vite · Tailwind CSS 4 · Framer Motion · React Router · Recharts · date-fns · ESLint
 
-1. **Minimal Header**: Brand identity with editorial serif typography, navigation links, and theme toggle.
-2. **Prominent Date Anchor**:
-   - Interactive day and date display (e.g. `WEDNESDAY, 11 NOVEMBER 2026`).
-   - Previous and next day navigation.
-   - Click to open the calendar date picker to choose any date.
-   - Subtle "Today" indicator.
-3. **Daily Expense Ledger**:
-   - Clean horizontal table layout with serial number (`01`, `02`...), description, and right-aligned amount in INR (`₹`).
-   - Inline `+ Add expense` row: type description, select category, enter amount, press **Enter** to save, **Esc** to cancel.
-   - Inline row editing and deletion with confirmation dialog.
-4. **Daily Total**:
-   - Immediate calculation of the total spent for the active day in bold editorial serif typography.
-   - Clean empty state when no expenses are logged.
-5. **Monthly Overview Summary**:
-   - Typographic metrics: Total spent this month, today's spend, and average daily spend based on elapsed days.
-6. **Calendar Section**:
-   - Monthly calendar with navigation, indicator dots for days with expenses, and single-click date selection.
-7. **Expense History & Archive**:
-   - Filterable ledger with description search, category filters, month selector, and CSV export.
+## Architecture Highlights
 
----
-
-## 🛠️ Architecture
-
-Spendly uses the **Repository Pattern** to decouple storage from UI components:
+- **Repository pattern**: UI talks to a `FinanceRepository` interface; today it is backed by `localStorage`, and the design lets a Supabase implementation drop in without touching components.
+- **Integer money math**: amounts are handled in paise (minor units) to avoid floating-point errors.
+- **Safe storage wrapper** (`src/lib/storage.ts`) with error handling and SSR guards.
+- **Context + hooks** for state (`FinanceContext`, `ExpenseContext`, `ThemeContext`, `useFinance`, `useTheme`).
 
 ```
 src/
-├── components/
-│   ├── journal/           # DateAnchor, DailyLedgerList, OverviewSummary, JournalCalendarSection, ExpenseHistorySection
-│   ├── layout/            # Header, AppLayout
-│   └── ui/                # Button, Modal, ConfirmDialog, Badge, ToastContainer
-├── context/
-│   ├── ExpenseContext.tsx
-│   ├── expenseContextInstance.ts
-│   ├── ThemeContext.tsx
-│   └── themeContextInstance.ts
-├── hooks/
-│   ├── useExpenses.ts
-│   └── useTheme.ts
-├── services/
-│   └── repositories/
-│       ├── ExpenseRepository.ts       # Storage interface
-│       └── LocalExpenseRepository.ts  # LocalStorage implementation
-├── types/
-│   └── expense.ts         # Domain model with nullable userId for Supabase
-└── utils/
-    ├── calculations.ts    # Reactive derived metrics
-    ├── categories.ts      # Expense categories
-    ├── currency.ts        # INR (₹) formatting (en-IN)
-    ├── dates.ts           # date-fns utilities
-    └── csv.ts             # CSV generator
+├── components/   # layout + reusable UI pieces
+├── context/      # Finance, Expense, Theme, Navigation providers
+├── hooks/        # useFinance, useExpenses, useTheme
+├── lib/          # safeStorage wrapper
+├── pages/        # Overview, CalendarView, Wallets, Savings, Insights, TransactionHistory, Settings
+├── services/     # repository interfaces + local implementation
+├── types/        # domain models
+└── utils/        # calculations, currency, dates
 ```
 
----
+## Getting Started
 
-## 🚀 Getting Started
+Requires Node.js 20.19+ (22 recommended).
 
 ```bash
-# Install dependencies
+git clone https://github.com/SakethRoyal01/Spendly.git
+cd Spendly
 npm install
-
-# Start development server
 npm run dev
-
-# Run linter
-npm run lint
-
-# Build production bundle
-npm run build
 ```
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Type-check and build for production |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run the ledger scenario checks |
+
+## Roadmap
+
+- [ ] Deploy a live demo
+- [ ] Supabase backend with auth and row-level security (design in [`docs/BACKEND_INTEGRATION_PLAN.md`](docs/BACKEND_INTEGRATION_PLAN.md))
+- [ ] Unit tests that import the real app utilities (Vitest)
+- [ ] PWA / offline install
+
+## License
+
+[MIT](LICENSE)
