@@ -53,7 +53,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // A successful fresh sign-in must start a new inactivity window. Without
+      // this, an old timestamp from a previous session can immediately sign
+      // the user out again before the finance workspace finishes loading.
+      if (event === 'SIGNED_IN' && nextSession?.user?.id) {
+        try {
+          window.localStorage.setItem(
+            `spendly:last-active:${nextSession.user.id}`,
+            String(Date.now())
+          );
+        } catch {
+          // Session persistence remains managed by Supabase if storage is restricted.
+        }
+      }
+
       setSession(nextSession);
       setLoading(false);
     });
