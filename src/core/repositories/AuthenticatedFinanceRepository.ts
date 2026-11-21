@@ -3,7 +3,10 @@ import { localFinanceRepository } from './LocalFinanceRepository';
 import { supabase } from '../supabase/client';
 import type { FullBackupData } from '../../types/finance';
 
-type RepositoryWithInitialize = FinanceRepository & { initialize: () => Promise<void> };
+type RepositoryWithInitialize = FinanceRepository & {
+  initialize: () => Promise<void>;
+  reloadFromCloud: () => Promise<void>;
+};
 
 let initializedForUser: string | null = null;
 let persistenceQueue: Promise<void> = Promise.resolve();
@@ -54,6 +57,16 @@ async function initializeForCurrentUser(): Promise<void> {
   initializedForUser = userId;
 }
 
+async function reloadSnapshotFromCloud(): Promise<void> {
+  const userId = await requireUserId();
+
+  // Finish this tab's pending save before replacing its local cache with the
+  // latest committed cloud snapshot.
+  await persistenceQueue.catch(() => undefined);
+  await loadUserSnapshot(userId);
+  initializedForUser = userId;
+}
+
 const readOnlyMethods = new Set<PropertyKey>([
   'getAccounts', 'getAccountById', 'getTransactions', 'getTransactionById',
   'getTransfers', 'getSavingsPots', 'getBudgets', 'getBudgetByMonth',
@@ -73,6 +86,7 @@ export const financeRepository: RepositoryWithInitialize = new Proxy(
   {
     get(target, property) {
       if (property === 'initialize') return initializeForCurrentUser;
+      if (property === 'reloadFromCloud') return reloadSnapshotFromCloud;
 
       const member = Reflect.get(target, property, target);
       if (typeof member !== 'function') return member;
