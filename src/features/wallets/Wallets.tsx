@@ -283,7 +283,7 @@ export const Wallets: React.FC = () => {
                           </span>
 
                           {/* Payment badge */}
-                          {(t.type === 'expense' || t.type === 'income') && (
+                          {t.type === 'expense' && (
                             <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[var(--bg-input)] text-[var(--text-secondary)] shrink-0">
                               {t.paymentMethod}
                             </span>
