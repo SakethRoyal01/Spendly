@@ -5,10 +5,11 @@ import { WalletCard } from './WalletCard';
 import { WalletFormModal } from './WalletFormModal';
 import { TransferModal } from './TransferModal';
 import { DepositModal } from './DepositModal';
+import { EditDepositModal } from './EditDepositModal';
 import { AccountDetailView } from './AccountDetailView';
 import { ExpenseFormModal } from '../expenses/ExpenseFormModal';
 import { UnspecifiedPaymentReminder } from '../expenses/UnspecifiedPaymentReminder';
-import type { Account, AccountType } from '../../types/finance';
+import type { Account, AccountType, Transaction, IncomeCategory } from '../../types/finance';
 import type { Expense, ExpenseCategory } from '../../types/expense';
 import { formatINR } from '../../shared/utils/currency';
 import { formatDateShort } from '../../shared/utils/dates';
@@ -25,6 +26,7 @@ export const Wallets: React.FC = () => {
     updateAccount,
     transferBetweenAccounts,
     addIncome,
+    updateTransaction,
   } = useFinance();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -52,6 +54,7 @@ export const Wallets: React.FC = () => {
   // Selected wallet activity filter & modal edit for overview list
   const [selectedWalletFilter, setSelectedWalletFilter] = useState<string>('ALL');
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editingIncome, setEditingIncome] = useState<Transaction | null>(null);
 
   const handleSaveAccount = async (data: {
     name: string;
@@ -106,6 +109,7 @@ export const Wallets: React.FC = () => {
             }}
             onDeposit={(acc) => setDepositAccount(acc)}
             onEditExpense={(exp) => setEditingExpense(exp)}
+            onEditIncome={(tx) => setEditingIncome(tx)}
           />
         ) : (
           /* All Wallets Overview */
@@ -279,7 +283,7 @@ export const Wallets: React.FC = () => {
                           </span>
 
                           {/* Payment badge */}
-                          {t.type === 'expense' && (
+                          {(t.type === 'expense' || t.type === 'income') && (
                             <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[var(--bg-input)] text-[var(--text-secondary)] shrink-0">
                               {t.paymentMethod}
                             </span>
@@ -315,6 +319,17 @@ export const Wallets: React.FC = () => {
                               }
                               className="w-7 h-7 rounded-full bg-[var(--bg-input)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center justify-center transition-colors cursor-pointer"
                               title="Edit expense payment details"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          )}
+                          {t.type === 'income' && (
+                            <button
+                              type="button"
+                              onClick={() => setEditingIncome(t)}
+                              className="w-7 h-7 rounded-full bg-[var(--bg-input)] hover:bg-emerald-600 text-[var(--text-secondary)] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                              title="Edit wallet deposit"
+                              aria-label="Edit wallet deposit"
                             >
                               <Pencil className="w-3 h-3" />
                             </button>
@@ -364,6 +379,23 @@ export const Wallets: React.FC = () => {
             paymentMethod: 'Bank Transfer',
             destinationAccountId: data.destinationAccountId,
             note: data.note,
+          });
+        }}
+      />
+
+      <EditDepositModal
+        isOpen={Boolean(editingIncome)}
+        onClose={() => setEditingIncome(null)}
+        transaction={editingIncome}
+        accounts={accounts}
+        onSave={async (id, updates) => {
+          await updateTransaction(id, {
+            amount: updates.amount,
+            category: updates.category as IncomeCategory,
+            description: updates.description,
+            date: updates.date,
+            destinationAccountId: updates.destinationAccountId,
+            note: updates.note,
           });
         }}
       />
