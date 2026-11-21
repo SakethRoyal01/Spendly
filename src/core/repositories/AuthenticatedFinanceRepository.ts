@@ -82,7 +82,7 @@ const readOnlyMethods = new Set<PropertyKey>([
  * a client from reading or writing another user's snapshot.
  */
 export const financeRepository: RepositoryWithInitialize = new Proxy(
-  localFinanceRepository as RepositoryWithInitialize,
+  localFinanceRepository as unknown as RepositoryWithInitialize,
   {
     get(target, property) {
       if (property === 'initialize') return initializeForCurrentUser;
