@@ -182,7 +182,7 @@ export const AccountDetailView: React.FC<AccountDetailViewProps> = ({
           category: tx.category,
           amount: tx.amount,
           isDebit: false,
-          rawIncome: tx,
+          rawIncome: tx.isChange || tx.category === 'Change' ? undefined : tx,
         });
       }
     });
