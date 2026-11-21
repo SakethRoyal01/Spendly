@@ -476,7 +476,7 @@ export class LocalFinanceRepository implements FinanceRepository {
       description: (input.description || '').trim(),
       date: input.date,
       paymentMethod: isUnspecified ? 'Not specified' : (input.paymentMethod || 'Not specified'),
-      sourceAccountId: isUnspecified ? null : (input.sourceAccountId || (newLedgerEntries[0]?.accountId ?? null)),
+      sourceAccountId: isUnspecified ? null : (newLedgerEntries[0]?.accountId ?? input.sourceAccountId ?? null),
       splits: isUnspecified ? undefined : input.splits,
       savingsPotId: isUnspecified ? null : (input.savingsPotId || null),
       note: input.note?.trim(),
