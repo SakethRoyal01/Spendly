@@ -23,6 +23,8 @@ import { isChangeTransaction } from '../../types/finance';
 import type { Expense, ExpenseCategory, MonthlyStats } from '../../types/expense';
 import type { ContributeInput, WithdrawInput, TransferInput } from '../repositories/FinanceRepository';
 import { financeRepository } from '../repositories/AuthenticatedFinanceRepository';
+import { supabase } from '../supabase/client';
+import { useAuth } from '../auth/useAuth';
 import { getTodayDateString, getCurrentMonthString } from '../../shared/utils/dates';
 import { addRupees, subtractRupees, formatINR } from '../../shared/utils/currency';
 import { calculateDailyTotal, calculateMonthlyStats } from '../../shared/utils/calculations';
@@ -30,6 +32,7 @@ import { exportExpensesToCSV } from '../../shared/utils/csv';
 import { FinanceContext, type ToastNotification } from './financeContextInstance';
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
@@ -130,6 +133,56 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       isMounted = false;
     };
   }, [refreshData]);
+
+  // Keep every signed-in device in sync with the user's cloud snapshot.
+  // Realtime only signals that the snapshot changed; each device then reloads
+  // the authoritative row under the user's existing RLS policy.
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const syncFromCloud = async () => {
+      try {
+        await financeRepository.reloadFromCloud();
+        await refreshData();
+      } catch (error) {
+        console.error('[FinanceContext] Cross-device sync failed:', error);
+      }
+    };
+
+    const channel = supabase
+      .channel(`spendly-finance-sync:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_finance_snapshots',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          void syncFromCloud();
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('[FinanceContext] Realtime sync channel status:', status);
+        }
+      });
+
+    // Reconcile after returning to a tab in case its realtime connection was
+    // suspended while the browser or device was in the background.
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') void syncFromCloud();
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, refreshData]);
 
   // Derived datasets
   // Filter true expenses (excluding accidental change entries categorized as expense)
