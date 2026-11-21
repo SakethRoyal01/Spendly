@@ -391,6 +391,14 @@ export class LocalFinanceRepository implements FinanceRepository {
         const acc = accounts.find((a) => a.id === split.sourceAccountId);
         if (!acc) throw new Error(`Source account for split not found: ${split.sourceAccountId}`);
 
+        // Keep payment method and wallet type aligned: UPI must never debit physical cash.
+        if (split.paymentMethod === 'Cash' && acc.type !== 'cash') {
+          throw new Error('Cash portions must be deducted from the Cash Wallet.');
+        }
+        if (split.paymentMethod === 'UPI' && acc.type !== 'bank' && acc.type !== 'savings_account') {
+          throw new Error('UPI portions must be deducted from a bank account, not the Cash Wallet.');
+        }
+
         // Note: Wallet and bank account balances are permitted to become negative on expenses.
         // Never block an expense because of insufficient funds.
       }
@@ -416,15 +424,28 @@ export class LocalFinanceRepository implements FinanceRepository {
     // Case 3: Single source payment (Cash, UPI from Bank, Bank Transfer, Card, etc.)
     else {
       let sourceAccId = input.sourceAccountId;
-      if (!sourceAccId) {
-        // Fallback to default or matching account
-        const fallback = input.paymentMethod === 'Cash'
-          ? accounts.find((a) => a.type === 'cash')
-          : accounts.find((a) => a.type === 'bank') || accounts[0];
+      const selectedAccount = accounts.find((a) => a.id === sourceAccId);
+
+      // Enforce wallet routing from the payment method at the domain layer.
+      // This also protects edits and older UI states that may carry a stale Cash account ID.
+      if (input.paymentMethod === 'Cash') {
+        sourceAccId = selectedAccount?.type === 'cash'
+          ? selectedAccount.id
+          : accounts.find((a) => a.type === 'cash')?.id;
+      } else if (input.paymentMethod === 'UPI') {
+        sourceAccId = selectedAccount && (selectedAccount.type === 'bank' || selectedAccount.type === 'savings_account')
+          ? selectedAccount.id
+          : accounts.find((a) => a.type === 'bank' || a.type === 'savings_account')?.id;
+      } else if (!sourceAccId) {
+        const fallback = accounts.find((a) => a.type === 'bank') || accounts[0];
         sourceAccId = fallback?.id;
       }
 
-      if (!sourceAccId) throw new Error('A source payment account must be selected');
+      if (!sourceAccId) {
+        throw new Error(input.paymentMethod === 'UPI'
+          ? 'Please add or select a bank account for UPI payments.'
+          : 'A source payment account must be selected');
+      }
 
       const accIdx = accounts.findIndex((a) => a.id === sourceAccId);
       if (accIdx === -1) throw new Error('Selected source account not found');
