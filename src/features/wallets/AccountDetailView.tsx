@@ -32,6 +32,7 @@ export interface AccountDetailViewProps {
   onTransfer: (account: Account) => void;
   onDeposit: (account: Account) => void;
   onEditExpense: (expense: Expense) => void;
+  onEditIncome: (transaction: Transaction) => void;
 }
 
 export interface ActivityRow {
@@ -49,6 +50,7 @@ export interface ActivityRow {
   isHybridPortion?: boolean;
   totalExpenseAmount?: number;
   rawExpense?: Expense;
+  rawIncome?: Transaction;
 }
 
 export const AccountDetailView: React.FC<AccountDetailViewProps> = ({
@@ -58,6 +60,7 @@ export const AccountDetailView: React.FC<AccountDetailViewProps> = ({
   onTransfer,
   onDeposit,
   onEditExpense,
+  onEditIncome,
 }) => {
   const { accounts, transactions, transfers, ledgerEntries, expenses } = useFinance();
 
@@ -179,6 +182,7 @@ export const AccountDetailView: React.FC<AccountDetailViewProps> = ({
           category: tx.category,
           amount: tx.amount,
           isDebit: false,
+          rawIncome: tx,
         });
       }
     });
@@ -672,7 +676,18 @@ export const AccountDetailView: React.FC<AccountDetailViewProps> = ({
                         )}
                       </div>
 
-                      {/* Edit button if it's an expense */}
+                      {/* Edit controls for wallet movements */}
+                      {item.rawIncome && (
+                        <button
+                          type="button"
+                          onClick={() => onEditIncome(item.rawIncome!)}
+                          className="w-8 h-8 rounded-full bg-[var(--bg-input)] hover:bg-emerald-600 text-[var(--text-secondary)] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                          title="Edit wallet deposit"
+                          aria-label="Edit wallet deposit"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {item.rawExpense && (
                         <button
                           type="button"
